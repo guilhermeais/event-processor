@@ -1,12 +1,11 @@
 # Challenge: Event Processor
 
-## 🎯 O Propósito
 Este projeto é a implementação de um componente **Event Processor** para uma plataforma de dados. O objetivo é construir um serviço reativo focado em consumir eventos de uma mensageria, realizar a validação contra contratos pré-definidos e fazer a triagem. O resultado final deve garantir baixa latência para o consumo por serviços subsequentes, operando de forma resiliente em um ecossistema multi-tenant.
 
 ![O problema a ser resolvido](./docs/architecture.png)
 ---
 
-## 🏗️ 1. Arquitetura e Decisões Técnicas (Planejamento)
+## 🏗️ 1. Arquitetura e Decisões Técnicas
 
 Para atender aos requisitos de escalabilidade e resiliência, a seguinte stack foi definida para simulação local:
 
@@ -29,7 +28,7 @@ Para atender aos requisitos de escalabilidade e resiliência, a seguinte stack f
 
 ---
 
-## 📋 2. Roadmap de Implementação (Checklist)
+## 📋 2. Roadmap de Implementação
 
 
 ### Requisitos Funcionais
