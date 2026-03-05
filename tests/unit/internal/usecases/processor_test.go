@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/guilhermeais/event-processor/internal/ports"
@@ -21,7 +22,7 @@ type validatorCalls struct {
 	payload   []byte
 }
 
-func (v StubValidator) Validate(ctx context.Context, eventType string, payload []byte) error {
+func (v *StubValidator) Validate(ctx context.Context, eventType string, payload []byte) error {
 	v.Calls = append(v.Calls, validatorCalls{
 		eventType: eventType,
 		payload:   payload,
@@ -34,7 +35,7 @@ type StubPersister struct {
 	MockedError error
 }
 
-func (p StubPersister) Save(ctx context.Context, cmd ports.SaveCommand) error {
+func (p *StubPersister) Save(ctx context.Context, cmd ports.SaveCommand) error {
 	p.Calls = append(p.Calls, cmd)
 	return p.MockedError
 }
@@ -67,4 +68,45 @@ func TestProcessor(t *testing.T) {
 		assert.EqualError(t, err, validator.MockedError.Error())
 	})
 
+	t.Run("should return DecisionRetry when persister fails but return a retryable error", func(t *testing.T) {
+		sut, _, persister := makeSut(t)
+		persister.MockedError = fmt.Errorf("%w: connection error", ports.ErrRetryable)
+		result, err := sut.Handle(context.Background(), usecases.HandleCommand{
+			ClientId:  "client_id_123",
+			EventId:   "123321",
+			EventType: "create-order",
+			Payload:   []byte{},
+		})
+		assert.Equal(t, result, usecases.DecisionRetry)
+		assert.Len(t, persister.Calls, 1)
+		assert.EqualError(t, err, persister.MockedError.Error())
+	})
+
+	t.Run("should return DecisionToDLQ when persister fails", func(t *testing.T) {
+		sut, _, persister := makeSut(t)
+		persister.MockedError = errors.New("an error")
+		result, err := sut.Handle(context.Background(), usecases.HandleCommand{
+			ClientId:  "client_id_123",
+			EventId:   "123321",
+			EventType: "create-order",
+			Payload:   []byte{},
+		})
+		assert.Equal(t, result, usecases.DecisionToDLQ)
+		assert.Len(t, persister.Calls, 1)
+		assert.EqualError(t, err, persister.MockedError.Error())
+	})
+
+	t.Run("should return DecisionAck when persist the event", func(t *testing.T) {
+		sut, validator, persister := makeSut(t)
+		result, err := sut.Handle(context.Background(), usecases.HandleCommand{
+			ClientId:  "client_id_123",
+			EventId:   "123321",
+			EventType: "create-order",
+			Payload:   []byte{},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, result, usecases.DecisionAck)
+		assert.Len(t, validator.Calls, 1)
+		assert.Len(t, persister.Calls, 1)
+	})
 }
