@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/guilhermeais/event-processor/internal/observability"
 	"github.com/guilhermeais/event-processor/internal/ports"
@@ -39,7 +40,7 @@ func (p Processor) Handle(ctx context.Context, cmd HandleCommand) (HandleDecisio
 		EventID:   cmd.EventId,
 		EventType: cmd.EventType,
 		Payload:   cmd.Payload,
-		Status:    ports.ReadyForDelivery,
+		CreatedAt: time.Now(),
 	})
 
 	if err != nil {
