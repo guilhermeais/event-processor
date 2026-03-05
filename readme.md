@@ -1,4 +1,4 @@
-# Challenge: Event Processor
+# Event Processor
 
 Este projeto é a implementação de um componente **Event Processor** para uma plataforma de dados. O objetivo é construir um serviço reativo focado em consumir eventos de uma mensageria, realizar a validação contra contratos pré-definidos e fazer a triagem. O resultado final deve garantir baixa latência para o consumo por serviços subsequentes, operando de forma resiliente em um ecossistema multi-tenant.
 
@@ -21,7 +21,11 @@ Para atender aos requisitos de escalabilidade e resiliência, a seguinte stack f
   * Eu havia considerado, inicialmente, PostgresSQL ou CassandraDB, porém:
   * *Por que não PostgreSQL?* Embora o Postgres consiga lidar com os payloads dinâmicos usando o tipo `jsonb`, bancos relacionais enfrentam gargalos de escalabilidade horizontal em cenários de alta ingestão (*write-heavy*) e exigiriam um gerenciamento complexo de pool de conexões via Lambda.
   * *Por que não CassandraDB?* O Cassandra lidaria perfeitamente com o alto volume de escritas e a escalabilidade, porém adicionaria uma complexidade operacional considerável (manutenção de cluster e tuning) que vai contra a premissa de simplicidade. O DynamoDB entrega a mesma performance no modelo *Serverless*.
-
+* **Observabilidade (Logs, Métricas e Traces):** 
+  * *Logs:* Adotei o padrão de **Structured Logging**. Em vez de múltiplos logs sequenciais no I/O, a aplicação consolida o contexto da execução e emite um único payload JSON por evento processado (contendo `event_id`, `client_id`, tempo de execução e status, etc..). Tomei essa decisão após ler este blog e concordar com a visão do mesmo: [Logging Sucks](https://loggingsucks.com/). O destino nativo é o **Amazon CloudWatch**, já que logaremos no stdout das AWS Lambdas.
+  * *Métricas:* 🤔 decidindo... 
+  * *Tracing:* 🤔 decidindo...
+  
 ### Diagrama da Solução
 
 ![Arquitetura do Event Processor](./docs/proposed-architecture.png)
