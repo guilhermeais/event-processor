@@ -18,10 +18,6 @@ func SetupLocalStack(ctx context.Context) (aws.Config, func()) {
 		log.Fatalf("localstack setup failed: %v", err)
 	}
 
-	if err != nil {
-		log.Fatalf("localstack setup failed: %v", err)
-	}
-
 	host, _ := lsContainer.Host(ctx)
 	port, _ := lsContainer.MappedPort(ctx, "4566/tcp")
 	endpoint := "http://" + host + ":" + port.Port()
