@@ -8,7 +8,7 @@ import (
 
 	"github.com/guilhermeais/event-processor/internal/ports"
 	"github.com/guilhermeais/event-processor/internal/usecases"
-	testhelpers "github.com/guilhermeais/event-processor/tests/unit/test_helpers"
+	testhelpers "github.com/guilhermeais/event-processor/tests/unit/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
 
