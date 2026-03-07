@@ -11,7 +11,7 @@ import (
 
 func makeSut(t *testing.T) *validator.JSONSchemaValidator {
 	t.Helper()
-	v, err := validator.NewValidatorFromReader([]validator.UncompiledSchemas{
+	v, err := validator.NewJSONSchemaValidator([]validator.UncompiledSchema{
 		{
 			EventType: "test",
 			Schema: `{

@@ -39,7 +39,30 @@ func CreateEventsTable(ctx context.Context, client *dynamodb.Client, tableName s
 	return err
 }
 
-func DeleteEventsTable(ctx context.Context, client *dynamodb.Client, tableName string) error {
+func CreateSchemasTable(ctx context.Context, client *dynamodb.Client, tableName string) error {
+	_, err := client.CreateTable(ctx, &dynamodb.CreateTableInput{
+		TableName: aws.String(tableName),
+		AttributeDefinitions: []types.AttributeDefinition{
+			{
+				AttributeName: aws.String("event_type"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+		},
+		KeySchema: []types.KeySchemaElement{
+			{
+				AttributeName: aws.String("event_type"),
+				KeyType:       types.KeyTypeHash,
+			},
+		},
+		ProvisionedThroughput: &types.ProvisionedThroughput{
+			ReadCapacityUnits:  aws.Int64(1),
+			WriteCapacityUnits: aws.Int64(1),
+		},
+	})
+	return err
+}
+
+func DeleteTable(ctx context.Context, client *dynamodb.Client, tableName string) error {
 	_, err := client.DeleteTable(ctx, &dynamodb.DeleteTableInput{
 		TableName: &tableName,
 	})

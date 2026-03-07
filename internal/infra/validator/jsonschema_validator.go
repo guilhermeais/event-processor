@@ -32,12 +32,12 @@ func (j *JSONSchemaValidator) Validate(ctx context.Context, eventType string, pa
 	return nil
 }
 
-type UncompiledSchemas struct {
+type UncompiledSchema struct {
 	EventType string
 	Schema    string
 }
 
-func NewValidatorFromReader(uncompiledSchemas []UncompiledSchemas) (*JSONSchemaValidator, error) {
+func NewJSONSchemaValidator(uncompiledSchemas []UncompiledSchema) (*JSONSchemaValidator, error) {
 	schemas := schemas{}
 	for _, s := range uncompiledSchemas {
 		schema, err := jsonschema.CompileString(s.EventType, s.Schema)

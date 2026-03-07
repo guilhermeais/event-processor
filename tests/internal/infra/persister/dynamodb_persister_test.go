@@ -60,11 +60,10 @@ func TestDynamoPersister_Save(t *testing.T) {
 		// The idea is to crete a table for each test, enabling the paralelism on tests
 		tableName := fmt.Sprintf("events_%s", uuid.NewString())
 		err := testhelpers.CreateEventsTable(ctx, dynamoClient, tableName)
-		defer func() {
-			testhelpers.DeleteEventsTable(ctx, dynamoClient, tableName)
-		}()
-
 		assert.Nil(t, err)
+		defer func() {
+			testhelpers.DeleteTable(ctx, dynamoClient, tableName)
+		}()
 
 		sut := persister.NewDynamoPersister(dynamoClient, tableName)
 		err = sut.Save(ctx, ports.SaveCommand{
@@ -94,7 +93,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 		tableName := fmt.Sprintf("events_%s", uuid.NewString())
 		err := testhelpers.CreateEventsTable(ctx, dynamoClient, tableName)
 		defer func() {
-			testhelpers.DeleteEventsTable(ctx, dynamoClient, tableName)
+			testhelpers.DeleteTable(ctx, dynamoClient, tableName)
 		}()
 
 		assert.Nil(t, err)
@@ -137,7 +136,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 		tableName := fmt.Sprintf("events_%s", uuid.NewString())
 		err := testhelpers.CreateEventsTable(ctx, dynamoClient, tableName)
 		defer func() {
-			testhelpers.DeleteEventsTable(ctx, dynamoClient, tableName)
+			testhelpers.DeleteTable(ctx, dynamoClient, tableName)
 		}()
 
 		assert.Nil(t, err)
