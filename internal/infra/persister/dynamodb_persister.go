@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/guilhermeais/event-processor/internal/observability"
 	"github.com/guilhermeais/event-processor/internal/ports"
 )
 
@@ -21,6 +22,7 @@ type DynamoPersister struct {
 	db        DynamoDbAPI
 	tableName string
 	now       func() time.Time
+	logger    observability.Logger
 }
 
 func (p *DynamoPersister) Save(ctx context.Context, cmd ports.SaveCommand) error {
@@ -31,7 +33,6 @@ func (p *DynamoPersister) Save(ctx context.Context, cmd ports.SaveCommand) error
 		"payload":    &types.AttributeValueMemberS{Value: string(cmd.Payload)},
 		"created_at": &types.AttributeValueMemberS{Value: cmd.CreatedAt.UTC().Format(time.RFC3339Nano)},
 	}
-
 	_, err := p.db.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName:           aws.String(p.tableName),
 		Item:                item,
@@ -40,17 +41,20 @@ func (p *DynamoPersister) Save(ctx context.Context, cmd ports.SaveCommand) error
 	if err == nil {
 		return nil
 	}
+	p.logger.AddAttribute("dynamodb_error", err.Error())
 
-	// Error when the idepotemcy key is duplicated (client_id/event_id)
+	// Error when the idempotency key is duplicated (client_id/event_id)
 	var cfe *types.ConditionalCheckFailedException
 	isIdempotencyError := errors.As(err, &cfe)
 	if isIdempotencyError {
+		p.logger.AddAttribute("is_idempotency_error", true)
 		return nil
 	}
 
 	if isRetryableDynamoErr(err) {
 		return fmt.Errorf("%w: %v", ports.ErrRetryable, err)
 	}
+
 	return err
 }
 
