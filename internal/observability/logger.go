@@ -1,6 +1,7 @@
 package observability
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 )
@@ -15,12 +16,16 @@ type Logger struct {
 func NewLogger(baseLogger *slog.Logger) *Logger {
 	return &Logger{
 		startTime:  time.Now(),
-		attributes: make(map[string]any),
+		attributes: map[string]any{},
 		baseLogger: baseLogger,
 	}
 }
 
 func (l *Logger) AddAttribute(key string, value any) {
+	// Temporary debug to catch nil map
+	if l.attributes == nil {
+		panic(fmt.Sprintf("PANIC: attributes is nil! Logger state: startTime=%v, err=%v, baseLogger=%v", l.startTime, l.err, l.baseLogger != nil))
+	}
 	l.attributes[key] = value
 }
 

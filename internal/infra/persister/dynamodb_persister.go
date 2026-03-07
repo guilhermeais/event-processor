@@ -22,7 +22,7 @@ type DynamoPersister struct {
 	db        DynamoDbAPI
 	tableName string
 	now       func() time.Time
-	logger    observability.Logger
+	logger    *observability.Logger
 }
 
 func (p *DynamoPersister) Save(ctx context.Context, cmd ports.SaveCommand) error {
@@ -95,10 +95,14 @@ func isRetryableDynamoErr(err error) bool {
 	return false
 }
 
-func NewDynamoPersister(db DynamoDbAPI, tableName string) *DynamoPersister {
+func NewDynamoPersister(db DynamoDbAPI, tableName string, logger *observability.Logger) *DynamoPersister {
+	if logger == nil {
+		panic("logger cannot be nil")
+	}
 	return &DynamoPersister{
 		db:        db,
 		tableName: tableName,
 		now:       time.Now,
+		logger:    logger,
 	}
 }

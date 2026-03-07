@@ -64,8 +64,8 @@ func TestDynamoPersister_Save(t *testing.T) {
 		defer func() {
 			testhelpers.DeleteTable(ctx, dynamoClient, tableName)
 		}()
-
-		sut := persister.NewDynamoPersister(dynamoClient, tableName)
+		logger, _ := testhelpers.CreateLogger(t)
+		sut := persister.NewDynamoPersister(dynamoClient, tableName, logger)
 		err = sut.Save(ctx, ports.SaveCommand{
 			ClientID:  "client-1",
 			EventID:   "event-1",
@@ -97,8 +97,8 @@ func TestDynamoPersister_Save(t *testing.T) {
 		}()
 
 		assert.Nil(t, err)
-
-		sut := persister.NewDynamoPersister(dynamoClient, tableName)
+		logger, _ := testhelpers.CreateLogger(t)
+		sut := persister.NewDynamoPersister(dynamoClient, tableName, logger)
 		err = sut.Save(ctx, ports.SaveCommand{
 			ClientID:  "client-1",
 			EventID:   "event-1",
@@ -140,8 +140,8 @@ func TestDynamoPersister_Save(t *testing.T) {
 		}()
 
 		assert.Nil(t, err)
-
-		sut := persister.NewDynamoPersister(dynamoClient, tableName)
+		logger, _ := testhelpers.CreateLogger(t)
+		sut := persister.NewDynamoPersister(dynamoClient, tableName, logger)
 		err = sut.Save(ctx, ports.SaveCommand{
 			ClientID:  "client-1",
 			EventID:   "event-1",
@@ -192,8 +192,8 @@ func TestDynamoPersister_Save(t *testing.T) {
 
 	t.Run("should return non retryable error if table does not exists", func(t *testing.T) {
 		tableName := fmt.Sprintf("events_%s", uuid.NewString())
-
-		sut := persister.NewDynamoPersister(dynamoClient, tableName)
+		logger, _ := testhelpers.CreateLogger(t)
+		sut := persister.NewDynamoPersister(dynamoClient, tableName, logger)
 		err := sut.Save(ctx, ports.SaveCommand{
 			ClientID:  "client-1",
 			EventID:   "event-1",
@@ -255,7 +255,8 @@ func TestDynamoPersister_Save_RetryableErros(
 				},
 			}
 
-			sut := persister.NewDynamoPersister(mock, "test-table")
+			logger, _ := testhelpers.CreateLogger(t)
+			sut := persister.NewDynamoPersister(mock, "test-table", logger)
 			err := sut.Save(ctx, ports.SaveCommand{
 				ClientID:  "client-1",
 				EventID:   "event-1",

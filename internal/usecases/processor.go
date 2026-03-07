@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -16,8 +17,10 @@ type Processor struct {
 }
 
 type HandleCommand struct {
-	ClientId, EventId, EventType string
-	Payload                      []byte
+	ClientId  string          `json:"client_id"`
+	EventId   string          `json:"event_id"`
+	EventType string          `json:"event_type"`
+	Payload   json.RawMessage `json:"payload"`
 }
 
 type HandleDecision string
@@ -60,6 +63,9 @@ func NewProcessor(
 	persister ports.Persister,
 	logger *observability.Logger,
 ) *Processor {
+	if logger == nil {
+		panic("logger cannot be nil")
+	}
 	return &Processor{
 		validator: validator,
 		persister: persister,
