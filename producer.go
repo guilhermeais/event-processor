@@ -135,7 +135,7 @@ func main() {
 
 	queueURL := os.Getenv("QUEUE_URL")
 	if queueURL == "" {
-		log.Fatal("missin 'QUEUE_URL'")
+		log.Fatal("missing env var 'QUEUE_URL'")
 	}
 
 	numWorkers := 10
@@ -199,17 +199,17 @@ func sqsWorker(ctx context.Context, client *sqs.Client, queueURL string, eventCh
 		batch = append(batch, entry)
 
 		if len(batch) == 10 {
-			enviarBatchComRetry(client, queueURL, batch)
+			sendBatchWithRetry(client, queueURL, batch)
 			batch = nil
 		}
 	}
 
 	if len(batch) > 0 {
-		enviarBatchComRetry(client, queueURL, batch)
+		sendBatchWithRetry(client, queueURL, batch)
 	}
 }
 
-func enviarBatchComRetry(client *sqs.Client, queueURL string, batch []types.SendMessageBatchRequestEntry) {
+func sendBatchWithRetry(client *sqs.Client, queueURL string, batch []types.SendMessageBatchRequestEntry) {
 	maxRetries := 3
 
 	for attempt := 1; attempt <= maxRetries && len(batch) > 0; attempt++ {
