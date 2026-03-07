@@ -1,4 +1,7 @@
 LOCALSTACK_CONTAINER := $(shell docker compose ps -q localstack)
+PRODUCER_BIN = bin/produtor
+PRODUCER_MAIN = ./producer.go
+QUEUE_URL=http://localhost:4566/000000000000/event-queue
 
 build:
 	@echo "building..."
@@ -30,8 +33,10 @@ logs-cw:
 		--query 'events[*].message' \
 		--output text
 
-send-msg:
-	docker compose exec localstack awslocal sqs send-message \
-		--queue-url http://localhost:4566/000000000000/event-queue \
-		--message-body '{"id":"123432","birthday": "2026-08-26"}' \
-		--message-attributes '{"client_id": {"DataType": "String", "StringValue": "client-123"},"event_id": {"DataType": "String", "StringValue": "'$$(uuidgen -r)'"}, "event_type": {"DataType": "String", "StringValue": "USER_CREATED"}}'
+run-producer:
+	AWS_REGION=us-east-1 \
+	AWS_ACCESS_KEY_ID=test \
+	AWS_SECRET_ACCESS_KEY=test \
+	AWS_ENDPOINT_URL="http://localhost:4566" \
+	QUEUE_URL=${QUEUE_URL} \
+	go run $(PRODUCER_MAIN)
