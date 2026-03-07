@@ -13,8 +13,12 @@ import (
 	"github.com/guilhermeais/event-processor/internal/ports"
 )
 
+type DynamoDbAPI interface {
+	PutItem(ctx context.Context, params *dynamodb.PutItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.PutItemOutput, error)
+}
+
 type DynamoPersister struct {
-	db        *dynamodb.Client
+	db        DynamoDbAPI
 	tableName string
 	now       func() time.Time
 }
@@ -87,7 +91,7 @@ func isRetryableDynamoErr(err error) bool {
 	return false
 }
 
-func NewDynamoPersister(db *dynamodb.Client, tableName string) *DynamoPersister {
+func NewDynamoPersister(db DynamoDbAPI, tableName string) *DynamoPersister {
 	return &DynamoPersister{
 		db:        db,
 		tableName: tableName,

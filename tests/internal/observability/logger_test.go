@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	testhelpers "github.com/guilhermeais/event-processor/tests/unit/testhelpers"
+	testhelpers "github.com/guilhermeais/event-processor/tests/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
 

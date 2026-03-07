@@ -38,3 +38,10 @@ func CreateEventsTable(ctx context.Context, client *dynamodb.Client, tableName s
 	})
 	return err
 }
+
+func DeleteEventsTable(ctx context.Context, client *dynamodb.Client, tableName string) error {
+	_, err := client.DeleteTable(ctx, &dynamodb.DeleteTableInput{
+		TableName: &tableName,
+	})
+	return err
+}
