@@ -7,13 +7,28 @@ awslocal dynamodb create-table \
     --key-schema AttributeName=event_type,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST
 
-echo "creating default schema 'USER_CREATED'"
-awslocal dynamodb put-item \
-    --table-name schemas \
-    --item '{
-        "event_type": {"S": "USER_CREATED"},
-        "schema": {"S": "{\"type\":\"object\",\"properties\": {\"id\": { \"type\": \"string\" },\"birthday\": { \"type\": \"string\", \"format\": \"date\" }}}"}
-    }'
+echo "creating default schemas..."
+python3 << 'EOF'
+import json
+import subprocess
+
+with open('/etc/localstack/init/ready.d/default-schemas.json', 'r') as f:
+    schemas = json.load(f)
+
+for schema in schemas:
+    event_type = schema['event_type']
+    schema_json = json.dumps(json.dumps(schema['schema']))
+    
+    print(f"Creating schema for event type: {event_type}")
+    
+    item = f'{{"event_type": {{"S": "{event_type}"}}, "schema": {{"S": {schema_json}}}}}'
+    
+    subprocess.run([
+        'awslocal', 'dynamodb', 'put-item',
+        '--table-name', 'schemas',
+        '--item', item
+    ])
+EOF
 
 awslocal dynamodb create-table \
     --table-name events \

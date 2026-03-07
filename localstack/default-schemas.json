@@ -1,0 +1,95 @@
+[
+  {
+    "event_type": "ACCOUNT_CREATED",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "account_id": { "type": "string" },
+        "customer_id": { "type": "string" },
+        "account_type": {
+          "type": "string",
+          "enum": ["CHECKING", "SAVINGS", "SALARY"]
+        },
+        "currency": { "type": "string", "default": "BRL" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["account_id", "customer_id", "account_type", "created_at"]
+    }
+  },
+  {
+    "event_type": "TRANSACTION_AUTHORIZED",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "transaction_id": { "type": "string" },
+        "account_id": { "type": "string" },
+        "amount": { "type": "number" },
+        "transaction_type": { "type": "string", "enum": ["CREDIT", "DEBIT"] },
+        "method": {
+          "type": "string",
+          "enum": ["PIX", "TED", "CREDIT_CARD", "DEBIT_CARD"]
+        },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "transaction_id",
+        "account_id",
+        "amount",
+        "transaction_type",
+        "method",
+        "timestamp"
+      ]
+    }
+  },
+  {
+    "event_type": "CARD_ISSUED",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "card_id": { "type": "string" },
+        "account_id": { "type": "string" },
+        "card_type": {
+          "type": "string",
+          "enum": ["CREDIT", "DEBIT", "MULTIPLE"]
+        },
+        "last_four_digits": { "type": "string", "pattern": "^[0-9]{4}$" },
+        "expiration_date": {
+          "type": "string",
+          "pattern": "^(0[1-9]|1[0-2])\\\\/[0-9]{2}$"
+        },
+        "is_virtual": { "type": "boolean" }
+      },
+      "required": [
+        "card_id",
+        "account_id",
+        "card_type",
+        "last_four_digits",
+        "is_virtual"
+      ]
+    }
+  },
+  {
+    "event_type": "CREDIT_ANALYSIS_APPROVED",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "analysis_id": { "type": "string" },
+        "customer_id": { "type": "string" },
+        "approved_limit": { "type": "number" },
+        "risk_score": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "product_type": {
+          "type": "string",
+          "enum": ["PERSONAL_LOAN", "CREDIT_CARD", "MORTGAGE"]
+        },
+        "valid_until": { "type": "string", "format": "date" }
+      },
+      "required": [
+        "analysis_id",
+        "customer_id",
+        "approved_limit",
+        "risk_score",
+        "product_type"
+      ]
+    }
+  }
+]

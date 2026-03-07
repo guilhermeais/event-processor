@@ -10,6 +10,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh"
+      - "./localstack/default-schemas.json:/etc/localstack/init/ready.d/default-schemas.json"
       - "./build:/var/task"
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin
