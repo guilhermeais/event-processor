@@ -68,3 +68,67 @@ Assim protegemos o *Core* da aplicação e podemos ter uma **testabilidade facil
 - [x] **Resiliência:** Implementação de DLQ para garantir zero perda de eventos inválidos ou com falha.
 - [x] **Testabilidade:** Criação de testes unitários e de integração (integração com os componentes usando LocalStack).
 - [x] **Reprodutibilidade:** Criação de um ambiente Docker/LocalStack com script de infraestrutura para facilitar a validação.
+
+## 🚀 4. Como Executar
+
+Para garantir que o ambiente seja facilmente replicado, toda a orquestração de infraestrutura, *build* e execução foi encapsulada no `Makefile`. 
+
+**Pré-requisitos:**
+* Docker e Docker Compose instalados.
+* Go 1.25+ (para rodar os testes e o produtor de eventos).
+* `make` e `zip` (para o empacotamento da Lambda).
+
+### Passo a Passo
+
+**1. Subir a Infraestrutura (LocalStack + Lambda):**
+
+O comando abaixo irá compilar a aplicação Go (garantindo compatibilidade com o ambiente Linux da AWS Lambda usando um container Docker), empacotar o binário e subir o LocalStack já provisionando a fila SQS, a tabela no DynamoDB e fazendo o *deploy* da Lambda.
+```bash
+make up
+```
+(Aguarde alguns segundos até que o LocalStack termine de baixar as imagens e inicializar os recursos da AWS).
+
+**2. Injetar Eventos (Producer):**
+
+Com a infraestrutura no ar, você pode gerar eventos simulados e publicá-los na fila SQS executando o mock producer:
+```bash
+make run-producer
+```
+Ele ira gerar 5.000 eventos aleatórios com os diferentes schemas padrões (`ACCOUNT_CREATED`, `TRANSACTION_AUTHORIZED`, `CARD_ISSUED` e `CREDIT_ANALYSIS_APPROVED`) e enviar pra fila criada no `make up`.
+
+**3. Acompanhar a Observabilidade (Logs):**
+
+Para visualizar o resultado do processamento reativo (o SQS acionando a Lambda) e ver o Structured Logging em ação através do CloudWatch do LocalStack, execute:
+```bash
+make logs-cw
+```
+Caso precise debugar a infraestrutura em si, você pode usar `make logs` para ver a saída do container do LocalStack.
+
+**4. Derrumar Ambiente**
+
+Para parar os containers, limpar os volumes (banco e fila) e remover a pasta de build, execute:
+```bash
+make down
+```
+
+#### Pontos de evolução
+- Invés de ter o script `localstack/init-aws.sh` que roda dentro do container localstack e usa o `awslocal` para criar a arquitetura necessária pra aplicação rodar, eu teria utilizado algum mecanimos de IAC mais moderno, como por exemplo, `terraform`. Sei que o localstack é compatível com ele [de acordo com essa documentação](https://docs.localstack.cloud/aws/capabilities/config/initialization-hooks/#terraform-files-as-init-hooks). Não o usei pois o tempo para o projeto era relativamente curto, e também, preciso estudar e melhorar minhas habilidades utilizando o mesmo.
+
+## 🧪 5. Testes e Qualidade
+O projeto conta com testes de integração focados em garantir a testabilidade do Core (regra de negócio). Quando falo de teste de integração, digo componentes que interagem entre si. A minha premissa é que, por mais que eu crie um `mock/stub` e injete ele em um caso de uso, o caso de uso **integra** com outras partes, injetar um mock não o torna teste unitário.
+
+Dito isso, teve momentos que fiz o uso de `mocks/stubs` para testar - como por exemplo, o caso de uso `Processor` -, como teve momentos que subi, de fato, um `localstack` usando `testcontainers` para validar integração com dynamodb (Ex: `tests/internal/infra/persister/dynamodb_persister_test.go` e `tests/internal/infra/validator/jsonschema_loader_test.go`)
+
+**1. Para rodar a suíte completa de testes:**
+
+```bash
+make test
+```
+
+**2. Para gerar e visualizar o relatório de cobertura de código:**
+
+```bash
+make coverage-html
+```
+
+Para os testes, prefiri subir o `localstack` diretamente do código, facilitando o setup inicial para rodar os testes. Você pode consultar os detalhes dessa implementação em um utilitário de teste no arquivo `tests/testhelpers/localstack_helper.go`
