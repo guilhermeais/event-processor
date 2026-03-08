@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
@@ -16,38 +15,6 @@ import (
 	testhelpers "github.com/guilhermeais/event-processor/tests/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
-
-type EventDynamodb struct {
-	ClientID  string `dynamodbav:"client_id"`
-	EventID   string `dynamodbav:"event_id"`
-	EventType string `dynamodbav:"event_type"`
-	Payload   string `dynamodbav:"payload"`
-	CreatedAt string `dynamodbav:"created_at"`
-}
-
-func getDynamoDbEvent(
-	t *testing.T,
-	ctx context.Context,
-	dynamoClient *dynamodb.Client,
-	tableName,
-	clientId,
-	eventId string,
-) EventDynamodb {
-	firstClientIdKey := map[string]types.AttributeValue{
-		"client_id": &types.AttributeValueMemberS{Value: clientId},
-		"event_id":  &types.AttributeValueMemberS{Value: eventId},
-	}
-
-	var parsedEvent EventDynamodb
-	saved, err := dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: &tableName,
-		Key:       firstClientIdKey,
-	})
-	err = attributevalue.UnmarshalMap(saved.Item, &parsedEvent)
-	assert.Nil(t, err)
-
-	return parsedEvent
-}
 
 func TestDynamoPersister_Save(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -74,7 +41,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 			CreatedAt: time.Now(),
 		})
 		assert.Nil(t, err)
-		event := getDynamoDbEvent(
+		event := testhelpers.GetDynamoDbEvent(
 			t,
 			ctx,
 			dynamoClient,
@@ -117,7 +84,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 		})
 		assert.Nil(t, err)
 
-		event := getDynamoDbEvent(
+		event := testhelpers.GetDynamoDbEvent(
 			t,
 			ctx,
 			dynamoClient,
@@ -160,7 +127,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 		})
 		assert.Nil(t, err)
 
-		firstClientEvent := getDynamoDbEvent(
+		firstClientEvent := testhelpers.GetDynamoDbEvent(
 			t,
 			ctx,
 			dynamoClient,
@@ -174,7 +141,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 		assert.Equal(t, firstClientEvent.EventType, "event-type-1")
 		assert.Equal(t, firstClientEvent.Payload, `{"id":"1"}`)
 
-		secondClientEvent := getDynamoDbEvent(
+		secondClientEvent := testhelpers.GetDynamoDbEvent(
 			t,
 			ctx,
 			dynamoClient,

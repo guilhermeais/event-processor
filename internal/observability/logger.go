@@ -3,6 +3,7 @@ package observability
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 )
 
@@ -19,6 +20,12 @@ func NewLogger(baseLogger *slog.Logger) *Logger {
 		attributes: map[string]any{},
 		baseLogger: baseLogger,
 	}
+}
+
+func NewLoggerDefault() *Logger {
+	slogJsonHandler := slog.NewJSONHandler(os.Stdout, nil)
+	baseLogger := slog.New(slogJsonHandler)
+	return NewLogger(baseLogger)
 }
 
 func (l *Logger) AddAttribute(key string, value any) {
