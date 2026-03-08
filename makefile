@@ -2,6 +2,23 @@ PRODUCER_BIN = bin/produtor
 PRODUCER_MAIN = ./producer.go
 QUEUE_URL=http://localhost:4566/000000000000/event-queue
 
+COVER_IGNORE='mocks/|tests/|cmd/'
+
+test:
+	go test -v ./...
+
+coverage:
+	go test -coverpkg=./... -coverprofile=coverage.tmp ./...
+	grep -v -E $(COVER_IGNORE) coverage.tmp > coverage.out || true
+	rm coverage.tmp
+	go tool cover -func=coverage.out
+
+coverage-html: coverage
+	go tool cover -html=coverage.out
+
+clean-test:
+	rm -f coverage.out coverage.tmp
+
 build:
 	@echo "building..."
 	mkdir -p build
