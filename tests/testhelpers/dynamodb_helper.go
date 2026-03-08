@@ -98,8 +98,9 @@ func GetDynamoDbEvent(
 		TableName: &tableName,
 		Key:       firstClientIdKey,
 	})
+	assert.NoError(t, err)
 	err = attributevalue.UnmarshalMap(saved.Item, &parsedEvent)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	return parsedEvent
 }

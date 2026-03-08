@@ -45,18 +45,14 @@ func prepareTables(t *testing.T, ctx context.Context, dynamo *dynamodb.Client) (
 	}, eventsTbl, schemasTbl
 }
 
-func TestHandler(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+type sut struct {
+	sut                   *entrypoint.LambdaEntryPoint
+	eventsTbl, schemasTbl string
+	cleanup               func()
+}
 
-	cfg, cleanup := testhelpers.SetupLocalStack(ctx)
-	defer cleanup()
-
-	dynamo := dynamodb.NewFromConfig(cfg)
-	sqsClientLocal := sqs.NewFromConfig(cfg)
-
+func makeSut(t *testing.T, ctx context.Context, dynamo *dynamodb.Client, sqsClientLocal *sqs.Client) sut {
 	cleanupTables, eventsTbl, schemasTbl := prepareTables(t, ctx, dynamo)
-	defer cleanupTables()
 
 	dlqOut, err := sqsClientLocal.CreateQueue(ctx, &sqs.CreateQueueInput{
 		QueueName: aws.String("dlq-" + uuid.NewString()),
@@ -70,9 +66,31 @@ func TestHandler(t *testing.T) {
 	v, err := validator.NewJSONSchemaValidator(schemas)
 	assert.NoError(t, err)
 
-	sut := entrypoint.NewLambdaEntryPoint(dynamo, eventsTbl, *dlqOut.QueueUrl, v, sqsClientLocal)
+	l := entrypoint.NewLambdaEntryPoint(dynamo, eventsTbl, *dlqOut.QueueUrl, v, sqsClientLocal)
+	return sut{
+		sut:        l,
+		eventsTbl:  eventsTbl,
+		schemasTbl: schemasTbl,
+		cleanup: func() {
+			cleanupTables()
+		},
+	}
+}
+
+func TestHandler(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	cfg, cleanup := testhelpers.SetupLocalStack(ctx)
+	defer cleanup()
+
+	dynamo := dynamodb.NewFromConfig(cfg)
+	sqsClientLocal := sqs.NewFromConfig(cfg)
 
 	t.Run("should ack if everthing is OK", func(t *testing.T) {
+		s := makeSut(t, ctx, dynamo, sqsClientLocal)
+		defer s.cleanup()
+
 		payload := `{"id":"1","birthday":"2003-08-26"}`
 		ev := events.SQSEvent{
 			Records: []events.SQSMessage{
@@ -88,9 +106,9 @@ func TestHandler(t *testing.T) {
 			},
 		}
 
-		resp, err := sut.Handler(ctx, ev)
+		resp, err := s.sut.Handler(ctx, ev)
 
-		itemOnDb := testhelpers.GetDynamoDbEvent(t, ctx, dynamo, eventsTbl, "client-1", "evt-1")
+		itemOnDb := testhelpers.GetDynamoDbEvent(t, ctx, dynamo, s.eventsTbl, "client-1", "evt-1")
 		assert.NotEmpty(t, itemOnDb)
 		assert.Equal(t, itemOnDb.ClientID, "client-1")
 		assert.Equal(t, itemOnDb.EventID, "evt-1")
@@ -102,6 +120,9 @@ func TestHandler(t *testing.T) {
 	})
 
 	t.Run("should move to dlq", func(t *testing.T) {
+		s := makeSut(t, ctx, dynamo, sqsClientLocal)
+		defer s.cleanup()
+
 		payload := `{"id": {"id":"invalid"}}`
 		ev := events.SQSEvent{
 			Records: []events.SQSMessage{
@@ -117,9 +138,9 @@ func TestHandler(t *testing.T) {
 			},
 		}
 
-		resp, err := sut.Handler(ctx, ev)
+		resp, err := s.sut.Handler(ctx, ev)
 
-		itemOnDb := testhelpers.GetDynamoDbEvent(t, ctx, dynamo, eventsTbl, "client-1", "evt-2")
+		itemOnDb := testhelpers.GetDynamoDbEvent(t, ctx, dynamo, s.eventsTbl, "client-1", "evt-2")
 		assert.Empty(t, itemOnDb)
 		assert.NoError(t, err)
 		assert.Len(t, resp.BatchItemFailures, 1)
