@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-xray-sdk-go/v2/xray"
 	"github.com/guilhermeais/event-processor/internal/infra/entrypoint"
 	"github.com/guilhermeais/event-processor/internal/infra/validator"
 )
@@ -40,7 +41,9 @@ func bootstrap(ctx context.Context) (*entrypoint.LambdaEntryPoint, error) {
 }
 
 func main() {
-	lambdaHandler, err := bootstrap(context.Background())
+	ctx, subseg := xray.BeginSegment(context.Background(), "event-processor")
+	defer subseg.Close(nil)
+	lambdaHandler, err := bootstrap(ctx)
 	if err != nil {
 		log.Fatalf("bootstrap failed: %v", err)
 	}

@@ -1,4 +1,3 @@
-LOCALSTACK_CONTAINER := $(shell docker compose ps -q localstack)
 PRODUCER_BIN = bin/produtor
 PRODUCER_MAIN = ./producer.go
 QUEUE_URL=http://localhost:4566/000000000000/event-queue
