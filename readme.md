@@ -100,6 +100,8 @@ Para garantir que o ambiente seja facilmente replicado, toda a orquestração de
 * Go 1.25+ (para rodar os testes e o produtor de eventos).
 * `make` e `zip` (para o empacotamento da Lambda).
 
+> Recomendo rodar em um ambiente `linux`.
+
 ### Passo a Passo
 
 **1. Subir a Infraestrutura (LocalStack + Lambda):**

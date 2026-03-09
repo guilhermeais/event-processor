@@ -98,6 +98,8 @@ To ensure the environment is easily replicated, all infrastructure orchestration
 * Go 1.25+ (to run tests and the event producer).
 * `make` and `zip` (for Lambda packaging).
 
+> A Linux environment is recommended.
+
 ### Step by Step
 
 **1. Start Infrastructure (LocalStack + Lambda):**
