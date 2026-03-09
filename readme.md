@@ -3,6 +3,23 @@
 Este projeto é a implementação de um componente **Event Processor** para uma plataforma de dados. O objetivo é construir um serviço reativo focado em consumir eventos de uma mensageria, realizar a validação contra contratos pré-definidos e fazer a triagem. O resultado final deve garantir baixa latência para o consumo por serviços subsequentes, operando de forma resiliente em um ecossistema multi-tenant.
 
 ![O problema a ser resolvido](./docs/architecture.png)
+
+---
+
+## 📑 Índice
+
+1. [🏗️ Arquitetura e Decisões Técnicas](#️-1-arquitetura-e-decisões-técnicas)
+   - [Diagrama da Solução](#diagrama-da-solução)
+   - [Justificativa de Algumas Escolhas](#justificativa-de-algumas-escolhas)
+2. [💻 Design de Código (Arquitetura Hexagonal)](#-2-design-de-código-arquitetura-hexagonal)
+3. [📋 Roadmap de Implementação](#-3-roadmap-de-implementação)
+   - [Requisitos Funcionais](#requisitos-funcionais)
+   - [Requisitos Não Funcionais](#requisitos-não-funcionais)
+4. [🚀 Como Executar](#-4-como-executar)
+   - [Passo a Passo](#passo-a-passo)
+   - [Pontos de evolução](#pontos-de-evolução)
+5. [🧪 Testes e Qualidade](#-5-testes-e-qualidade)
+
 ---
 
 ## 🏗️ 1. Arquitetura e Decisões Técnicas
