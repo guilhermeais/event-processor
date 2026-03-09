@@ -1,5 +1,9 @@
 # Event Processor
 
+**Português** | **[English](README.en.md)**
+
+---
+
 Este projeto é a implementação de um componente **Event Processor** para uma plataforma de dados. O objetivo é construir um serviço reativo focado em consumir eventos de uma mensageria, realizar a validação contra contratos pré-definidos e fazer a triagem. O resultado final deve garantir baixa latência para o consumo por serviços subsequentes, operando de forma resiliente em um ecossistema multi-tenant.
 
 ![O problema a ser resolvido](./docs/architecture.png)
