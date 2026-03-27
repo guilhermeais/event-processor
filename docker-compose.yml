@@ -4,15 +4,19 @@ services:
     ports:
       - "127.0.0.1:4566:4566"
     environment:
-      - SERVICES=sqs,dynamodb,lambda,logs,cloudwatch,xray
+      - SERVICES=sqs,dynamodb,lambda,logs,cloudwatch,xray,iam
       - AWS_DEFAULT_REGION=us-east-1
       - DOCKER_HOST=unix:///var/run/docker.sock
       - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN- }
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh"
-      - "./localstack/default-schemas.json:/etc/localstack/init/ready.d/default-schemas.json"
       - "./build:/var/task"
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-f", "http://127.0.0.1:4566/_localstack/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin
     ports:
