@@ -4,7 +4,7 @@ PRODUCER_BIN = bin/produtor
 PRODUCER_MAIN = ./producer.go
 COVER_IGNORE='mocks/|tests/|cmd/'
 
-TF_DOCKER = docker run --rm -v "$(PWD):/app" -w /app/terraform --network host hashicorp/terraform:latest
+TF_DOCKER = docker run --rm -v "$(PWD):/app" -w /app/terraform/envs/local --network host hashicorp/terraform:latest
 PY_DOCKER = docker run --rm -it -v "$(PWD):/app" -w /app --network host
 
 test:

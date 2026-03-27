@@ -5,6 +5,7 @@ import os
 
 schemas_table_name = os.environ.get('SCHEMAS_TABLE_NAME')
 endpoint_url = os.environ.get('AWS_ENDPOINT_URL', 'http://localhost:4566')
+region = os.environ.get('AWS_REGION', 'us-east-1')
 
 if not schemas_table_name:
     raise ValueError("A variável de ambiente SCHEMAS_TABLE_NAME não foi definida!")
@@ -14,13 +15,15 @@ print(f"Tabela alvo: {schemas_table_name}")
 
 dynamodb = boto3.resource(
     'dynamodb',
-    endpoint_url=endpoint_url
+    endpoint_url=endpoint_url,
+    region_name=region
 )
 
 table = dynamodb.Table(schemas_table_name)
 file_path = 'scripts/default-schemas.json'
 
 try:
+    print(f"aws credenties env: {os.environ.get('AWS_ACCESS_KEY_ID')}, {os.environ.get('AWS_SECRET_ACCESS_KEY')}")
     with open(file_path, 'r') as f:
         schemas = json.load(f)
 

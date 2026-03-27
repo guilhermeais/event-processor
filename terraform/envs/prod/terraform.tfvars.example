@@ -1,0 +1,22 @@
+environment     = "dev"
+project_name    = "event-processor"
+aws_region      = "us-east-1"
+use_localstack  = true
+localstack_endpoint = "http://localhost:4566"
+aws_access_key_id    = "test"
+aws_secret_access_key = "test"
+
+schema_table_name        = "schemas"
+events_table_name        = "events"
+event_queue_name         = "event-queue"
+event_dlq_name           = "event-dlq"
+lambda_function_name     = "event-processor-lambda"
+lambda_role_name         = "event_processor_lambda_role"
+visibility_timeout_seconds = 30
+max_receive_count        = 3
+lambda_batch_size        = 10
+
+tags = {
+  ManagedBy = "Terraform"
+  Team      = "Backend"
+}
