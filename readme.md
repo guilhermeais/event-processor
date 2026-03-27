@@ -107,10 +107,10 @@ Para garantir que o ambiente seja facilmente replicado, toda a orquestração de
 **1. Subir a Infraestrutura (LocalStack + Lambda):**
 
 O comando abaixo irá compilar a aplicação Go (garantindo compatibilidade com o ambiente Linux da AWS Lambda usando um container Docker), empacotar o binário e subir o LocalStack já provisionando a fila SQS, a tabela no DynamoDB e fazendo o *deploy* da Lambda.
+O provisionamento recursos é feito usando IAC com Terraform. Dentro da pasta `terraform/`, temos o IAC que provisiona a infraestrutura dentro do localstack.
 ```bash
 make up
 ```
-(Aguarde alguns segundos até que o LocalStack termine de baixar as imagens e inicializar os recursos da AWS).
 
 **2. Injetar Eventos (Producer):**
 

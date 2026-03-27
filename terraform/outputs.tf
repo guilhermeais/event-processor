@@ -17,3 +17,8 @@ output "queue_url" {
   description = "URL da Queue"
   value       = aws_sqs_queue.event_queue.url
 }
+
+output "lambda_name" {
+  description = "Nome da função Lambda"
+  value       = aws_lambda_function.event_processor.function_name
+}

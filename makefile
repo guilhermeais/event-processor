@@ -51,8 +51,11 @@ logs:
 	docker compose logs -f localstack
 
 logs-cw:
+	@echo "Coletando outputs do Terraform..."
+	$(eval LAMBDA_NAME := $(shell $(TF_DOCKER) output -raw lambda_name))
+	@echo "Nome da função Lambda: $(LAMBDA_NAME)"
 	docker compose exec localstack awslocal logs filter-log-events \
-		--log-group-name /aws/lambda/event-processor-lambda \
+		--log-group-name /aws/lambda/$(LAMBDA_NAME) \
 		--query 'events[*].message' \
 		--output text
 
