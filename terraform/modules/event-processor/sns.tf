@@ -5,9 +5,10 @@ resource "aws_sns_topic" "events" {
 }
 
 resource "aws_sns_topic_subscription" "events_to_queue" {
-  topic_arn = aws_sns_topic.events.arn
-  protocol  = "sqs"
-  endpoint  = aws_sqs_queue.event_queue.arn
+  topic_arn            = aws_sns_topic.events.arn
+  protocol             = "sqs"
+  endpoint             = aws_sqs_queue.event_queue.arn
+  raw_message_delivery = true
 }
 
 resource "aws_sqs_queue_policy" "event_queue_policy" {

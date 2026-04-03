@@ -13,6 +13,7 @@ provider "aws" {
     content {
       dynamodb = var.localstack_endpoint
       lambda   = var.localstack_endpoint
+      sns      = var.localstack_endpoint
       sqs      = var.localstack_endpoint
       iam      = var.localstack_endpoint
     }
