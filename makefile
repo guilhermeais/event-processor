@@ -1,7 +1,6 @@
 .PHONY: test coverage coverage-html clean-test build up down logs logs-cw tf-init tf-apply tf-destroy run-producer seed
 
-PRODUCER_BIN = bin/produtor
-PRODUCER_MAIN = ./producer.go
+PRODUCER_MAIN = ./cmd/producer/main.go
 COVER_IGNORE='mocks/|tests/|cmd/'
 
 TF_DOCKER = docker run --rm -v "$(PWD):/app" -w /app/terraform/envs/local --network host hashicorp/terraform:latest

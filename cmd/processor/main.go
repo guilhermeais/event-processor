@@ -15,8 +15,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go-v2/service/sns/types"
 	"github.com/google/uuid"
 )
 
@@ -131,11 +131,11 @@ func main() {
 		log.Fatalf("error loading aws config: %v", err)
 	}
 
-	client := sqs.NewFromConfig(cfg)
+	client := sns.NewFromConfig(cfg)
 
-	queueURL := os.Getenv("QUEUE_URL")
-	if queueURL == "" {
-		log.Fatal("missing env var 'QUEUE_URL'")
+	topicARN := os.Getenv("TOPIC_ARN")
+	if topicARN == "" {
+		log.Fatal("missing env var 'TOPIC_ARN'")
 	}
 
 	numWorkers := 10
@@ -146,7 +146,7 @@ func main() {
 
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go sqsWorker(ctx, client, queueURL, eventChannel, &wg)
+		go snsWorker(ctx, client, topicARN, eventChannel, &wg)
 	}
 
 	log.Printf("generating %d events...", totalEventsToGenerate)
@@ -166,9 +166,9 @@ func main() {
 	log.Println("process finished!")
 }
 
-func sqsWorker(ctx context.Context, client *sqs.Client, queueURL string, eventChannel <-chan EventEnvelope, wg *sync.WaitGroup) {
+func snsWorker(ctx context.Context, client *sns.Client, topicARN string, eventChannel <-chan EventEnvelope, wg *sync.WaitGroup) {
 	defer wg.Done()
-	var batch []types.SendMessageBatchRequestEntry
+	var batch []types.PublishBatchRequestEntry
 
 	for event := range eventChannel {
 		bodyBytes, _ := json.Marshal(event.Payload)
@@ -176,10 +176,9 @@ func sqsWorker(ctx context.Context, client *sqs.Client, queueURL string, eventCh
 		uuidv7, _ := uuid.NewV7()
 		eventID := uuidv7.String()
 		clientID := uuid.NewString()
-
-		entry := types.SendMessageBatchRequestEntry{
-			Id:          aws.String(eventID),
-			MessageBody: aws.String(string(bodyBytes)),
+		entry := types.PublishBatchRequestEntry{
+			Id:      aws.String(eventID),
+			Message: aws.String(string(bodyBytes)),
 			MessageAttributes: map[string]types.MessageAttributeValue{
 				"event_id": {
 					DataType:    aws.String("String"),
@@ -199,26 +198,26 @@ func sqsWorker(ctx context.Context, client *sqs.Client, queueURL string, eventCh
 		batch = append(batch, entry)
 
 		if len(batch) == 10 {
-			sendBatchWithRetry(client, queueURL, batch)
+			sendBatchWithRetry(ctx, client, topicARN, batch)
 			batch = nil
 		}
 	}
 
 	if len(batch) > 0 {
-		sendBatchWithRetry(client, queueURL, batch)
+		sendBatchWithRetry(ctx, client, topicARN, batch)
 	}
 }
 
-func sendBatchWithRetry(client *sqs.Client, queueURL string, batch []types.SendMessageBatchRequestEntry) {
+func sendBatchWithRetry(ctx context.Context, client *sns.Client, topicArn string, batch []types.PublishBatchRequestEntry) {
 	maxRetries := 3
 
 	for attempt := 1; attempt <= maxRetries && len(batch) > 0; attempt++ {
-		input := &sqs.SendMessageBatchInput{
-			QueueUrl: aws.String(queueURL),
-			Entries:  batch,
+		input := &sns.PublishBatchInput{
+			TopicArn:                   aws.String(topicArn),
+			PublishBatchRequestEntries: batch,
 		}
 
-		resp, err := client.SendMessageBatch(context.TODO(), input)
+		resp, err := client.PublishBatch(ctx, input)
 		if err != nil {
 			log.Printf("attempt %d: error sending batch: %v", attempt, err)
 			time.Sleep(time.Duration(attempt) * time.Second)
@@ -237,7 +236,7 @@ func sendBatchWithRetry(client *sqs.Client, queueURL string, batch []types.SendM
 			log.Printf(" - failed reason: %s (Code: %s)", *failed.Message, *failed.Code)
 		}
 
-		var nextBatch []types.SendMessageBatchRequestEntry
+		var nextBatch []types.PublishBatchRequestEntry
 		for _, entry := range batch {
 			if failedIDs[*entry.Id] {
 				nextBatch = append(nextBatch, entry)

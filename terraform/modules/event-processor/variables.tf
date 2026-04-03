@@ -27,6 +27,12 @@ variable "events_table_name" {
   default     = "events"
 }
 
+variable "event_topic_name" {
+  description = "Nome do tópico SNS de entrada de eventos"
+  type        = string
+  default     = "event-topic"
+}
+
 variable "event_queue_name" {
   description = "Nome da fila SQS de entrada"
   type        = string

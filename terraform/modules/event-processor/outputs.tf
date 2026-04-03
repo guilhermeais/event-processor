@@ -1,3 +1,8 @@
+output "event_topic_arn" {
+  description = "ARN do tópico SNS de eventos"
+  value       = aws_sns_topic.events.arn
+}
+
 output "schemas_table_name" {
   description = "Nome final da tabela de schemas"
   value       = aws_dynamodb_table.schemas.name
