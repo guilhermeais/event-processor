@@ -1,4 +1,4 @@
-.PHONY: test coverage coverage-html clean-test build up down logs logs-cw tf-init tf-apply tf-destroy run-producer seed
+.PHONY: test coverage coverage-html clean-test build up down logs logs-cw tf-init tf-apply tf-destroy run-producer seed diag diag-sns diag-sqs diag-dlq diag-dynamo clean-queues clean-sqs clean-dlq
 
 PRODUCER_MAIN = ./cmd/producer/main.go
 COVER_IGNORE='mocks/|tests/|cmd/'
@@ -58,6 +58,57 @@ logs-cw:
 		--query 'events[*].message' \
 		--output text
 
+diag: diag-sns diag-sqs diag-dlq diag-dynamo
+
+diag-sns:
+	@echo "=== SNS: subscriptions ==="
+	$(eval TOPIC_ARN := $(shell $(TF_DOCKER) output -raw event_topic_arn))
+	docker compose exec localstack awslocal sns list-subscriptions-by-topic \
+		--topic-arn $(TOPIC_ARN) \
+		--query 'Subscriptions[*].{Protocol:Protocol,Endpoint:Endpoint,SubscriptionArn:SubscriptionArn}' \
+		--output table
+
+diag-sqs:
+	@echo "=== SQS: mensagens na fila ==="
+	$(eval QUEUE_URL := $(shell $(TF_DOCKER) output -raw queue_url))
+	docker compose exec localstack awslocal sqs get-queue-attributes \
+		--queue-url $(QUEUE_URL) \
+		--attribute-names ApproximateNumberOfMessages ApproximateNumberOfMessagesNotVisible ApproximateNumberOfMessagesDelayed \
+		--query 'Attributes' \
+		--output table
+
+diag-dlq:
+	@echo "=== DLQ: contagem e preview ==="
+	$(eval DLQ_URL := $(shell $(TF_DOCKER) output -raw dlq_url))
+	docker compose exec localstack awslocal sqs get-queue-attributes \
+		--queue-url $(DLQ_URL) \
+		--attribute-names ApproximateNumberOfMessages \
+		--query 'Attributes' \
+		--output table
+	@echo "--- mensagens na DLQ (peek, visibility=30s) ---"
+	docker compose exec localstack awslocal sqs receive-message \
+		--queue-url $(DLQ_URL) \
+		--max-number-of-messages 5 \
+		--message-attribute-names All \
+		--visibility-timeout 30 \
+		--query 'Messages[*].{Id:MessageId,Attributes:MessageAttributes,Body:Body}' \
+		--output json
+
+clean-queues: clean-sqs clean-dlq
+	@echo "Filas limpas!"
+
+clean-sqs:
+	@echo "Limpando SQS event-queue..."
+	$(eval QUEUE_URL := $(shell $(TF_DOCKER) output -raw queue_url))
+	docker compose exec localstack awslocal sqs purge-queue --queue-url $(QUEUE_URL)
+	@echo "✓ SQS event-queue purgada"
+
+clean-dlq:
+	@echo "Limpando SQS event-dlq..."
+	$(eval DLQ_URL := $(shell $(TF_DOCKER) output -raw dlq_url))
+	docker compose exec localstack awslocal sqs purge-queue --queue-url $(DLQ_URL)
+	@echo "✓ SQS event-dlq purgada"
+
 tf-init:
 	@echo "Inicializando Terraform via Docker..."
 	$(TF_DOCKER) init
@@ -72,14 +123,14 @@ tf-destroy:
 
 run-producer:
 	@echo "Coletando outputs do Terraform..."
-	$(eval QUEUE_URL := $(shell $(TF_DOCKER) output -raw queue_url))
-	@echo "URL da fila: $(QUEUE_URL)"
+	$(eval TOPIC_ARN := $(shell $(TF_DOCKER) output -raw event_topic_arn))
+	@echo "ARN do tópico: $(TOPIC_ARN)"
 
 	AWS_REGION=us-east-1 \
 	AWS_ACCESS_KEY_ID=test \
 	AWS_SECRET_ACCESS_KEY=test \
 	AWS_ENDPOINT_URL="http://localhost:4566" \
-	QUEUE_URL=${QUEUE_URL} \
+	TOPIC_ARN=${TOPIC_ARN} \
 	go run $(PRODUCER_MAIN)
 
 seed:
