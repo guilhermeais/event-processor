@@ -18,3 +18,10 @@ func CreateLogger(t *testing.T) (*observability.Logger, *bytes.Buffer) {
 
 	return logger, &buf
 }
+
+func TestLoggerFactory(t *testing.T) func() *observability.Logger {
+	return func() *observability.Logger {
+		logger, _ := CreateLogger(t)
+		return logger
+	}
+}

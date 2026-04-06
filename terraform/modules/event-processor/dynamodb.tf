@@ -14,11 +14,11 @@ resource "aws_dynamodb_table" "schemas" {
 resource "aws_dynamodb_table" "events" {
   name         = local.events_table_name
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "client_id"
+  hash_key     = "id"
   range_key    = "event_id"
 
   attribute {
-    name = "client_id"
+    name = "id"
     type = "S"
   }
 

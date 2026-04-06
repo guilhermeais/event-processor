@@ -22,6 +22,7 @@ type LambdaEntryPoint struct {
 	dlqURL          string
 	validator       ports.Validator
 	sqsClient       *sqs.Client
+	loggerFactory   func() *observability.Logger
 }
 
 func getStringMessageAttribute(msg events.SQSMessage, key string) string {
@@ -41,7 +42,7 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 	for _, message := range sqsEvent.Records {
 		wg.Add(1)
 		go func(msg events.SQSMessage) {
-			logger := observability.NewLoggerDefault()
+			logger := l.loggerFactory()
 			defer func() {
 				logger.Emit("message processed")
 				wg.Done()
@@ -125,6 +126,7 @@ func NewLambdaEntryPoint(
 	dlqURL string,
 	validator ports.Validator,
 	sqsClient *sqs.Client,
+	loggerFactory func() *observability.Logger,
 ) *LambdaEntryPoint {
 	if dynamoClient == nil {
 		panic("dynamo client is nil")
@@ -139,5 +141,6 @@ func NewLambdaEntryPoint(
 		eventsTableName: eventsTableName,
 		validator:       validator,
 		sqsClient:       sqsClient,
+		loggerFactory:   loggerFactory,
 	}
 }

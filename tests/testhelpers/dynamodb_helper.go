@@ -2,6 +2,7 @@ package testhelpers
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -16,22 +17,14 @@ func CreateEventsTable(ctx context.Context, client *dynamodb.Client, tableName s
 		TableName: aws.String(tableName),
 		AttributeDefinitions: []types.AttributeDefinition{
 			{
-				AttributeName: aws.String("client_id"),
-				AttributeType: types.ScalarAttributeTypeS,
-			},
-			{
-				AttributeName: aws.String("event_id"),
+				AttributeName: aws.String("id"),
 				AttributeType: types.ScalarAttributeTypeS,
 			},
 		},
 		KeySchema: []types.KeySchemaElement{
 			{
-				AttributeName: aws.String("client_id"),
+				AttributeName: aws.String("id"),
 				KeyType:       types.KeyTypeHash, // Partition Key
-			},
-			{
-				AttributeName: aws.String("event_id"),
-				KeyType:       types.KeyTypeRange, // Sort Key
 			},
 		},
 		ProvisionedThroughput: &types.ProvisionedThroughput{
@@ -73,11 +66,15 @@ func DeleteTable(ctx context.Context, client *dynamodb.Client, tableName string)
 }
 
 type EventDynamodb struct {
-	ClientID  string `dynamodbav:"client_id"`
-	EventID   string `dynamodbav:"event_id"`
-	EventType string `dynamodbav:"event_type"`
-	Payload   string `dynamodbav:"payload"`
-	CreatedAt string `dynamodbav:"created_at"`
+	// Chave de partição composta por client_id e event_id, concatenados com "#"
+	// Exemplo: "client123#event456"
+	// Essa chave é usada para garantir a unicidade do evento e distribuir os dados de forma eficiente na tabela do DynamoDB.
+	ClientEventID string `dynamodbav:"id"`
+	ClientID      string `dynamodbav:"client_id"`
+	EventID       string `dynamodbav:"event_id"`
+	EventType     string `dynamodbav:"event_type"`
+	Payload       string `dynamodbav:"payload"`
+	CreatedAt     string `dynamodbav:"created_at"`
 }
 
 func GetDynamoDbEvent(
@@ -89,8 +86,7 @@ func GetDynamoDbEvent(
 	eventId string,
 ) EventDynamodb {
 	firstClientIdKey := map[string]types.AttributeValue{
-		"client_id": &types.AttributeValueMemberS{Value: clientId},
-		"event_id":  &types.AttributeValueMemberS{Value: eventId},
+		"id": &types.AttributeValueMemberS{Value: fmt.Sprintf("%s#%s", clientId, eventId)},
 	}
 
 	var parsedEvent EventDynamodb

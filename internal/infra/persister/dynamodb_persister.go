@@ -27,6 +27,7 @@ type DynamoPersister struct {
 
 func (p *DynamoPersister) Save(ctx context.Context, cmd ports.SaveCommand) error {
 	item := map[string]types.AttributeValue{
+		"id":         &types.AttributeValueMemberS{Value: fmt.Sprintf("%s#%s", cmd.ClientID, cmd.EventID)},
 		"client_id":  &types.AttributeValueMemberS{Value: cmd.ClientID},
 		"event_id":   &types.AttributeValueMemberS{Value: cmd.EventID},
 		"event_type": &types.AttributeValueMemberS{Value: cmd.EventType},
@@ -36,7 +37,7 @@ func (p *DynamoPersister) Save(ctx context.Context, cmd ports.SaveCommand) error
 	_, err := p.db.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName:           aws.String(p.tableName),
 		Item:                item,
-		ConditionExpression: aws.String("attribute_not_exists(client_id) AND attribute_not_exists(event_id)"),
+		ConditionExpression: aws.String("attribute_not_exists(id)"),
 	})
 	if err == nil {
 		return nil

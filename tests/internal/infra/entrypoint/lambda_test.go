@@ -66,7 +66,7 @@ func makeSut(t *testing.T, ctx context.Context, dynamo *dynamodb.Client, sqsClie
 	v, err := validator.NewJSONSchemaValidator(schemas)
 	assert.NoError(t, err)
 
-	l := entrypoint.NewLambdaEntryPoint(dynamo, eventsTbl, *dlqOut.QueueUrl, v, sqsClientLocal)
+	l := entrypoint.NewLambdaEntryPoint(dynamo, eventsTbl, *dlqOut.QueueUrl, v, sqsClientLocal, testhelpers.TestLoggerFactory(t))
 	return sut{
 		sut:        l,
 		eventsTbl:  eventsTbl,

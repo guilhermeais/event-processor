@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-xray-sdk-go/v2/xray"
 	"github.com/guilhermeais/event-processor/internal/infra/entrypoint"
 	"github.com/guilhermeais/event-processor/internal/infra/validator"
+	"github.com/guilhermeais/event-processor/internal/observability"
 )
 
 func bootstrap(ctx context.Context) (*entrypoint.LambdaEntryPoint, error) {
@@ -37,7 +38,7 @@ func bootstrap(ctx context.Context) (*entrypoint.LambdaEntryPoint, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error on creating validator: %v", err)
 	}
-	return entrypoint.NewLambdaEntryPoint(dynamoClient, eventsTableName, dlqURL, v, sqsClient), nil
+	return entrypoint.NewLambdaEntryPoint(dynamoClient, eventsTableName, dlqURL, v, sqsClient, observability.NewLoggerDefault), nil
 }
 
 func main() {

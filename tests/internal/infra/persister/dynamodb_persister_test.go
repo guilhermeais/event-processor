@@ -40,7 +40,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 			Payload:   []byte(`{"id":"1"}`),
 			CreatedAt: time.Now(),
 		})
-		assert.Nil(t, err)
+		assert.NoError(t, err, "expected no error when saving the event")
 		event := testhelpers.GetDynamoDbEvent(
 			t,
 			ctx,
@@ -63,7 +63,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 			testhelpers.DeleteTable(ctx, dynamoClient, tableName)
 		}()
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		logger, _ := testhelpers.CreateLogger(t)
 		sut := persister.NewDynamoPersister(dynamoClient, tableName, logger)
 		err = sut.Save(ctx, ports.SaveCommand{
@@ -73,7 +73,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 			Payload:   []byte(`{"id":"1"}`),
 			CreatedAt: time.Now(),
 		})
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		err = sut.Save(ctx, ports.SaveCommand{
 			ClientID:  "client-1",
@@ -82,7 +82,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 			Payload:   []byte(`{"id":"1651"}`),
 			CreatedAt: time.Now(),
 		})
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		event := testhelpers.GetDynamoDbEvent(
 			t,
@@ -106,7 +106,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 			testhelpers.DeleteTable(ctx, dynamoClient, tableName)
 		}()
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		logger, _ := testhelpers.CreateLogger(t)
 		sut := persister.NewDynamoPersister(dynamoClient, tableName, logger)
 		err = sut.Save(ctx, ports.SaveCommand{
@@ -116,7 +116,7 @@ func TestDynamoPersister_Save(t *testing.T) {
 			Payload:   []byte(`{"id":"1"}`),
 			CreatedAt: time.Now(),
 		})
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		err = sut.Save(ctx, ports.SaveCommand{
 			ClientID:  "client-2",
