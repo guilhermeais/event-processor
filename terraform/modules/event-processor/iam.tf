@@ -55,3 +55,56 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda_exec_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
+
+resource "aws_iam_role" "firehose_delivery_role" {
+  name = local.firehose_role_name
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "firehose.amazonaws.com"
+      }
+    }]
+  })
+
+  tags = local.tags
+}
+
+resource "aws_iam_role_policy" "firehose_policy" {
+  name = local.firehose_policy_name
+  role = aws_iam_role.firehose_delivery_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "kinesis:DescribeStream",
+          "kinesis:GetShardIterator",
+          "kinesis:GetRecords",
+          "kinesis:ListShards"
+        ]
+        Resource = aws_kinesis_stream.dynamodb_cdc_stream.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:AbortMultipartUpload",
+          "s3:GetBucketLocation",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:ListBucketMultipartUploads",
+          "s3:PutObject"
+        ]
+        Resource = [
+          aws_s3_bucket.datalake_raw_zone.arn,
+          "${aws_s3_bucket.datalake_raw_zone.arn}/*"
+        ]
+      }
+    ]
+  })
+}

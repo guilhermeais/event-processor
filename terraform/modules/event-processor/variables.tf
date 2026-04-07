@@ -93,6 +93,24 @@ variable "lambda_handler" {
   default     = "bootstrap"
 }
 
+variable "s3_datalake_raw_zone_expiration_days" {
+  description = "Número de dias para expiração de objetos no S3"
+  type        = number
+  default     = 60
+}
+
+variable "kinesis_shard_count" {
+  description = "Número de shards para o Kinesis Stream"
+  type        = number
+  default     = 1
+}
+
+variable "kinesis_retention_period" {
+  description = "Período de retenção do Kinesis Stream (em horas)"
+  type        = number
+  default     = 24
+}
+
 variable "tags" {
   description = "Tags comuns para todos os recursos"
   type        = map(string)

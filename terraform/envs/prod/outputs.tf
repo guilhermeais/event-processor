@@ -22,3 +22,8 @@ output "lambda_name" {
   description = "Nome da função Lambda"
   value       = module.event_processor.lambda_name
 }
+
+output "event_topic_arn" {
+  description = "ARN do tópico SNS de eventos"
+  value       = module.event_processor.event_topic_arn
+}

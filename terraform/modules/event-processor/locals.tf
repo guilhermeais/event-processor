@@ -6,6 +6,11 @@ locals {
   event_dlq_name    = "${var.project_name}-${var.environment}-${var.event_dlq_name}"
   lambda_name       = "${var.project_name}-${var.environment}-lambda"
   role_name         = "${var.project_name}-${var.environment}-lambda-role"
+  data_lake_bucket_name = "${var.project_name}-${var.environment}-datalake-raw-zone"
+  aws_kinesis_stream_name = "${var.project_name}-${var.environment}-dynamodb-cdc-stream"
+  firehose_delivery_stream_name = "${var.project_name}-${var.environment}-event-firehose"
+  firehose_role_name = "${var.project_name}-${var.environment}-firehose-delivery-role"
+  firehose_policy_name = "${var.project_name}-${var.environment}-firehose-delivery-policy"
 
   tags = merge(
     var.tags,
