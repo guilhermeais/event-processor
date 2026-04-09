@@ -1,0 +1,21 @@
+# data/airflow/docker-compose.yaml
+services:
+  airflow:
+    image: apache/airflow:2.7.1-python3.10
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      # Credenciais AWS
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION-us-east-1}
+      # Variáveis do Pipeline de Dados
+      - GLUE_JOB_NAME=${GLUE_JOB_NAME}
+      - GLUE_CRAWLER_NAME=${GLUE_CRAWLER_NAME}
+      - S3_RAW_BUCKET=${S3_RAW_BUCKET}
+      - GLUE_IAM_ROLE_NAME=${GLUE_IAM_ROLE_NAME}
+      - GLUE_SCRIPT_S3_PATH=s3://${S3_RAW_BUCKET}/scripts/process_dynamo_cdc.py
+    volumes:
+      - ./dags:/opt/airflow/dags
+    ports:
+      - "8080:8080"
+    command: standalone

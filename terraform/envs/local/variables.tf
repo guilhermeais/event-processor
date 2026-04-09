@@ -24,7 +24,7 @@ variable "aws_region" {
 variable "use_localstack" {
   description = "Se true, usa LocalStack em vez de AWS real"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "localstack_endpoint" {

@@ -1,8 +1,8 @@
 resource "aws_s3_bucket" "datalake_raw_zone" {
-  bucket = local.data_lake_bucket_name
+  bucket = local.data_lake_raw_bucket_name
 
   tags = {
-    Name        = local.data_lake_bucket_name
+    Name        = local.data_lake_raw_bucket_name
     Environment = var.environment
   }
 }
@@ -26,4 +26,15 @@ resource "aws_s3_bucket_lifecycle_configuration" "datalake_raw_zone" {
       days = var.s3_datalake_raw_zone_expiration_days
     }
   }
+}
+
+resource "aws_s3_bucket" "datalake_silver" {
+  bucket = local.data_lake_silver_bucket_name
+}
+
+resource "aws_s3_object" "glue_script_upload" {
+  bucket = aws_s3_bucket.datalake_raw_zone.id
+  key    = "scripts/process_dynamo_cdc.py"
+  source = "../../../data/glue/jobs/process_dynamo_cdc.py"
+  etag   = filemd5("../../../data/glue/jobs/process_dynamo_cdc.py")
 }
