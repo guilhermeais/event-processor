@@ -28,7 +28,8 @@ resource "aws_iam_role_policy" "lambda_app_permissions" {
         Action = [
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes"
+          "sqs:GetQueueAttributes",
+          "sqs:SendMessage"
         ]
         Resource = aws_sqs_queue.event_queue.arn
       },

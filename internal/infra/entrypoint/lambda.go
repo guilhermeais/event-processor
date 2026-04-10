@@ -60,11 +60,11 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 			logger.AddAttribute("event_id", cmd.EventId)
 			logger.AddAttribute("event_type", cmd.EventType)
 
-			if err := json.Unmarshal([]byte(message.Body), &cmd.Payload); err != nil {
+			if err := json.Unmarshal([]byte(msg.Body), &cmd.Payload); err != nil {
 				logger.AddError(err)
 				mu.Lock()
 				batchItemFailures = append(batchItemFailures, events.SQSBatchItemFailure{
-					ItemIdentifier: message.MessageId,
+					ItemIdentifier: msg.MessageId,
 				})
 				mu.Unlock()
 				return
@@ -77,7 +77,7 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 			if decision == usecases.DecisionRetry {
 				mu.Lock()
 				batchItemFailures = append(batchItemFailures, events.SQSBatchItemFailure{
-					ItemIdentifier: message.MessageId,
+					ItemIdentifier: msg.MessageId,
 				})
 				mu.Unlock()
 				return
@@ -96,7 +96,7 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 				}
 				_, err := l.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 					QueueUrl:          aws.String(l.dlqURL),
-					MessageBody:       aws.String(message.Body),
+					MessageBody:       aws.String(msg.Body),
 					MessageAttributes: messageAttributes,
 				})
 
@@ -104,7 +104,7 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 					logger.AddAttribute("error_sending_to_dlq", err.Error())
 					mu.Lock()
 					batchItemFailures = append(batchItemFailures, events.SQSBatchItemFailure{
-						ItemIdentifier: message.MessageId,
+						ItemIdentifier: msg.MessageId,
 					})
 					mu.Unlock()
 				}
@@ -142,5 +142,6 @@ func NewLambdaEntryPoint(
 		validator:       validator,
 		sqsClient:       sqsClient,
 		loggerFactory:   loggerFactory,
+		dlqURL:          dlqURL,
 	}
 }
