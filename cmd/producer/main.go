@@ -138,8 +138,17 @@ func main() {
 		log.Fatal("missing env var 'TOPIC_ARN'")
 	}
 
+	eventsPerSecond := 10
+	if raw := os.Getenv("EVENTS_PER_SECOND"); raw != "" {
+		var parsed int
+		_, err := fmt.Sscanf(raw, "%d", &parsed)
+		if err != nil || parsed <= 0 {
+			log.Fatalf("invalid EVENTS_PER_SECOND value: %q", raw)
+		}
+		eventsPerSecond = parsed
+	}
+
 	numWorkers := 10
-	totalEventsToGenerate := 5000
 
 	eventChannel := make(chan EventEnvelope, 500)
 	var wg sync.WaitGroup
@@ -149,21 +158,24 @@ func main() {
 		go snsWorker(ctx, client, topicARN, eventChannel, &wg)
 	}
 
-	log.Printf("generating %d events...", totalEventsToGenerate)
+	interval := time.Second / time.Duration(eventsPerSecond)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
-	for i := 0; i < totalEventsToGenerate; i++ {
+	log.Printf("publishing continuously at %d events/second. Press Ctrl+C to stop.", eventsPerSecond)
+
+	for {
 		select {
 		case <-ctx.Done():
 			log.Println("stopped by user.")
-			break
-		default:
+			close(eventChannel)
+			wg.Wait()
+			log.Println("process finished!")
+			return
+		case <-ticker.C:
 			eventChannel <- generateRandomEvent()
 		}
 	}
-
-	close(eventChannel)
-	wg.Wait()
-	log.Println("process finished!")
 }
 
 func snsWorker(ctx context.Context, client *sns.Client, topicARN string, eventChannel <-chan EventEnvelope, wg *sync.WaitGroup) {

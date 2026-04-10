@@ -3,7 +3,7 @@ from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
-from pyspark.sql.functions import col, row_number, from_unixtime, year, month, dayofmonth
+from pyspark.sql.functions import col, row_number, from_unixtime, to_timestamp, year, month, dayofmonth
 from pyspark.sql.window import Window
 
 args = getResolvedOptions(sys.argv, ['JOB_NAME', 'S3_RAW_PATH', 'S3_SILVER_PATH'])
@@ -22,11 +22,15 @@ df_cleaned = df_raw.select(
     col("dynamodb.NewImage.client_id.S").alias("client_id"), 
     col("dynamodb.NewImage.event_id.S").alias("event_id"),
     col("dynamodb.NewImage.payload.S").alias("payload"),
+    col("dynamodb.NewImage.event_type.S").alias("event_type"),
     col("eventName").alias("event_name"),
     col("dynamodb.ApproximateCreationDateTime").alias("event_timestamp"),
 )
 
-df_cleaned = df_cleaned.withColumn("event_date", from_unixtime(col("event_timestamp")))
+df_cleaned = df_cleaned.withColumn(
+    "event_date",
+    to_timestamp(from_unixtime(col("event_timestamp").cast("double") / 1000.0)),
+)
 
 window_spec = Window.partitionBy("id").orderBy(col("event_timestamp").desc())
 

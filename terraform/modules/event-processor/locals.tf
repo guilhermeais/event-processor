@@ -12,7 +12,7 @@ locals {
   firehose_delivery_stream_name = "${var.project_name}-${var.environment}-event-firehose"
   firehose_role_name = "${var.project_name}-${var.environment}-firehose-delivery-role"
   firehose_policy_name = "${var.project_name}-${var.environment}-firehose-delivery-policy"
-  glue_catalog_database_name = "${var.project_name}-${var.environment}-datalake-catalog-db"
+  glue_catalog_database_name = "${var.project_name}-${var.environment}_datalake_catalog_db"
   glue_job_name = "${var.project_name}-${var.environment}-process-dynamo-cdc-job"
   glue_crawler_name = "${var.project_name}-${var.environment}-silver-layer-crawler"
   
