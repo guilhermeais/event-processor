@@ -15,7 +15,16 @@ job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
 print(f"Lendo dados da camada Raw: {args['S3_RAW_PATH']}")
-df_raw = spark.read.json(args['S3_RAW_PATH'])
+rdd_raw = (
+    spark.read
+    .option("recursiveFileLookup", "true")
+    .text(args['S3_RAW_PATH'])
+    .rdd
+    .map(lambda row: row.value)
+)
+rdd_fixed = rdd_raw.flatMap(lambda line: line.replace('}{', '}\n{').split('\n'))
+df_raw = spark.read.json(rdd_fixed)
+print(f"Lidos {df_raw.count()} registros da camada Raw.")
 
 df_cleaned = df_raw.select(
     col("dynamodb.NewImage.id.S").alias("id"), 
@@ -45,7 +54,9 @@ df_final = df_final.withColumn("year", year("event_date")) \
                    .withColumn("month", month("event_date")) \
                    .withColumn("day", dayofmonth("event_date"))
 
-print(f"Escrevendo dados na camada Silver: {args['S3_SILVER_PATH']}")
+print(f"Escrevendo dados na camada Silver: {args['S3_SILVER_PATH']} {df_final.count()} registros.")
+
+spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
 
 df_final.write \
     .mode("overwrite") \

@@ -5,6 +5,7 @@ services:
     image: apache/airflow:2.7.1-python3.10
     environment:
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW_WEBSERVER_SECRET_KEY-airflow-local-secret-key}
       # Credenciais AWS
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -17,6 +18,11 @@ services:
       - GLUE_SCRIPT_S3_PATH=s3://${S3_RAW_BUCKET}/scripts/process_dynamo_cdc.py
     volumes:
       - ./dags:/opt/airflow/dags
+      - ./webserver_config.py:/opt/airflow/webserver_config.py
+      - airflow_data:/opt/airflow/data
     ports:
       - "8080:8080"
     command: standalone
+
+volumes:
+  airflow_data:

@@ -4,10 +4,36 @@ services:
     container_name: event-processor-trino
     image: trinodb/trino:latest
     ports:
-      - "8081:8080"
+      - "8081:8081"
     volumes:
       - ./catalog:/etc/trino/catalog
     environment:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=${AWS_REGION-us-east-1}
+      # trino port
+      - TRINO_PORT=8081
+  superset:
+    build:
+      context: ./superset
+    container_name: event-processor-trino-superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY-mysecretkey}
+      - SUPERSET_CONFIG_PATH=/app/pythonpath/superset_config.py
+    volumes:
+      - superset_home:/app/superset_home
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py
+    command: >
+      /bin/sh -c "
+      superset db upgrade &&
+      superset fab create-admin --username admin --firstname Data --lastname Engineer --email admin@superset.com --password admin &&
+      superset init &&
+      gunicorn -w 2 --timeout 120 -b 0.0.0.0:8088 --limit-request-line 0 --limit-request-field_size 0 'superset.app:create_app()'
+      "
+    depends_on:
+      - trino
+
+volumes:
+  superset_home:
