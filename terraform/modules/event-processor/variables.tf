@@ -73,6 +73,44 @@ variable "lambda_batch_size" {
   description = "Tamanho do batch para procesar eventos da SQS"
   type        = number
   default     = 10
+
+  validation {
+    condition     = var.lambda_batch_size >= 1 && var.lambda_batch_size <= 10000
+    error_message = "lambda_batch_size deve estar entre 1 e 10000 para fila SQS standard."
+  }
+}
+
+variable "lambda_max_batching_window_seconds" {
+  description = "Janela máxima (segundos) para acumular mensagens antes de invocar a Lambda"
+  type        = number
+  default     = 5
+
+  validation {
+    condition     = var.lambda_max_batching_window_seconds >= 0 && var.lambda_max_batching_window_seconds <= 300
+    error_message = "lambda_max_batching_window_seconds deve estar entre 0 e 300."
+  }
+}
+
+variable "lambda_timeout_seconds" {
+  description = "Timeout da Lambda em segundos"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.lambda_timeout_seconds >= 1 && var.lambda_timeout_seconds <= 900
+    error_message = "lambda_timeout_seconds deve estar entre 1 e 900."
+  }
+}
+
+variable "lambda_xray_tracing_mode" {
+  description = "Modo de tracing do AWS X-Ray para Lambda (Active ou PassThrough)"
+  type        = string
+  default     = "Active"
+
+  validation {
+    condition     = contains(["Active", "PassThrough"], var.lambda_xray_tracing_mode)
+    error_message = "lambda_xray_tracing_mode deve ser Active ou PassThrough."
+  }
 }
 
 variable "lambda_zip_path" {

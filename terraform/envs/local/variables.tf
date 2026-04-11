@@ -101,6 +101,24 @@ variable "lambda_batch_size" {
   default     = 10
 }
 
+variable "lambda_max_batching_window_seconds" {
+  description = "Janela máxima (segundos) para acumular mensagens antes da invocação da Lambda"
+  type        = number
+  default     = 5
+}
+
+variable "lambda_timeout_seconds" {
+  description = "Timeout da Lambda em segundos"
+  type        = number
+  default     = 30
+}
+
+variable "lambda_xray_tracing_mode" {
+  description = "Modo de tracing do AWS X-Ray para Lambda (Active ou PassThrough)"
+  type        = string
+  default     = "Active"
+}
+
 variable "lambda_zip_path" {
   description = "Caminho para o arquivo ZIP da Lambda"
   type        = string
