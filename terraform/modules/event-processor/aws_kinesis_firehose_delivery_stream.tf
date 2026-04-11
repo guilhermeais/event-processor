@@ -16,6 +16,13 @@ resource "aws_kinesis_firehose_delivery_stream" "event_firehose" {
 
     prefix              = "raw/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/"
     error_output_prefix = "errors/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/!{firehose:error-output-type}/"
+
+    processing_configuration {
+      enabled = true
+      processors {
+        type = "AppendDelimiterToRecord"
+      }
+    }
   }
 
   tags = local.tags

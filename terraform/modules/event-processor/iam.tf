@@ -29,9 +29,20 @@ resource "aws_iam_role_policy" "lambda_app_permissions" {
           "sqs:ReceiveMessage",
           "sqs:DeleteMessage",
           "sqs:GetQueueAttributes",
-          "sqs:SendMessage"
+          "sqs:SendMessage",
         ]
         Resource = aws_sqs_queue.event_queue.arn
+      },
+      {
+        Sid    = "DLQAccess"
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:SendMessage",
+        ]
+        Resource = aws_sqs_queue.event_dlq.arn
       },
       {
         Sid    = "DynamoDBAccess"

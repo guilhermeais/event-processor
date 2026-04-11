@@ -16,7 +16,10 @@ resource "aws_glue_job" "process_cdc_job" {
   default_arguments = {
     "--S3_RAW_PATH"    = "s3://${aws_s3_bucket.datalake_raw_zone.bucket}/raw/"
     "--S3_SILVER_PATH" = "s3://${aws_s3_bucket.datalake_silver.bucket}/silver/"
-    "--job-bookmark-option" = "job-bookmark-enable" # Lembra o que já processou
+    "--job-bookmark-option"              = "job-bookmark-enable"
+    "--enable-continuous-cloudwatch-log" = "true"
+    "--enable-continuous-log-filter"     = "true"
+    "--continuous-log-logGroup"          = "/aws-glue/jobs/${local.glue_job_name}"
   }
 }
 resource "aws_glue_crawler" "silver_crawler" {
