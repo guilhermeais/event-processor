@@ -96,6 +96,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sns v1.39.15
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/prozz/aws-embedded-metrics-golang v1.2.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

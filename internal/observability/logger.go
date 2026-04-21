@@ -29,7 +29,6 @@ func NewLoggerDefault() *Logger {
 }
 
 func (l *Logger) AddAttribute(key string, value any) {
-	// Temporary debug to catch nil map
 	if l.attributes == nil {
 		panic(fmt.Sprintf("PANIC: attributes is nil! Logger state: startTime=%v, err=%v, baseLogger=%v", l.startTime, l.err, l.baseLogger != nil))
 	}

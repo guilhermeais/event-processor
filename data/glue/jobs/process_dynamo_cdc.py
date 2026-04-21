@@ -13,6 +13,7 @@ glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
+now = job._get_current_time()
 
 print(f"Lendo dados da camada Raw: {args['S3_RAW_PATH']}")
 rdd_raw = (
@@ -52,7 +53,8 @@ df_final = df_latest_state.filter(col("event_name") != "REMOVE")
 
 df_final = df_final.withColumn("year", year("event_date")) \
                    .withColumn("month", month("event_date")) \
-                   .withColumn("day", dayofmonth("event_date"))
+                   .withColumn("day", dayofmonth("event_date")) \
+                   .withColumn("processed_at", to_timestamp(lit(now)))
 
 print(f"Escrevendo dados na camada Silver: {args['S3_SILVER_PATH']} {df_final.count()} registros.")
 

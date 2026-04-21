@@ -46,9 +46,9 @@ func prepareTables(t *testing.T, ctx context.Context, dynamo *dynamodb.Client) (
 }
 
 type sut struct {
-	sut                   *entrypoint.LambdaEntryPoint
-	eventsTbl, schemasTbl string
-	cleanup               func()
+	sut                           *entrypoint.LambdaEntryPoint
+	eventsTbl, schemasTbl, dlqUrl string
+	cleanup                       func()
 }
 
 func makeSut(t *testing.T, ctx context.Context, dynamo *dynamodb.Client, sqsClientLocal *sqs.Client) sut {
@@ -71,6 +71,7 @@ func makeSut(t *testing.T, ctx context.Context, dynamo *dynamodb.Client, sqsClie
 		sut:        l,
 		eventsTbl:  eventsTbl,
 		schemasTbl: schemasTbl,
+		dlqUrl:     *dlqOut.QueueUrl,
 		cleanup: func() {
 			cleanupTables()
 		},
@@ -140,9 +141,22 @@ func TestHandler(t *testing.T) {
 
 		resp, err := s.sut.Handler(ctx, ev)
 
+		assert.NoError(t, err)
+		assert.Len(t, resp.BatchItemFailures, 0)
+
 		itemOnDb := testhelpers.GetDynamoDbEvent(t, ctx, dynamo, s.eventsTbl, "client-1", "evt-2")
 		assert.Empty(t, itemOnDb)
-		assert.NoError(t, err)
-		assert.Len(t, resp.BatchItemFailures, 1)
+		dlqMessages, err := sqsClientLocal.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:              aws.String(s.dlqUrl),
+			MessageAttributeNames: []string{"All"},
+		})
+		assert.Len(t, dlqMessages.Messages, 1, "Esperado exatamente 1 mensagem na DLQ")
+
+		msg := dlqMessages.Messages[0]
+		assert.Equal(t, payload, *msg.Body, "O corpo da mensagem na DLQ deve corresponder ao payload original")
+
+		assert.Equal(t, "client-1", *msg.MessageAttributes["client_id"].StringValue)
+		assert.Equal(t, "evt-2", *msg.MessageAttributes["event_id"].StringValue)
+		assert.Equal(t, "profile.created", *msg.MessageAttributes["event_type"].StringValue)
 	})
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/guilhermeais/event-processor/internal/observability"
 	"github.com/guilhermeais/event-processor/internal/ports"
 	"github.com/guilhermeais/event-processor/internal/usecases"
+	"github.com/prozz/aws-embedded-metrics-golang/emf"
 )
 
 type LambdaEntryPoint struct {
@@ -38,8 +39,10 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 	var batchItemFailures []events.SQSBatchItemFailure
 	var wg sync.WaitGroup
 	var mu sync.Mutex
+	metric := emf.New().Namespace("event-processor").Dimension("Service", "EventProcessor")
 
 	for _, message := range sqsEvent.Records {
+		metric.Metric("MessagedReceived", 1)
 		wg.Add(1)
 		go func(msg events.SQSMessage) {
 			logger := l.loggerFactory()
@@ -63,6 +66,7 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 			if err := json.Unmarshal([]byte(msg.Body), &cmd.Payload); err != nil {
 				logger.AddError(err)
 				mu.Lock()
+				metric.Metric("MessageUnmarshalError", 1)
 				batchItemFailures = append(batchItemFailures, events.SQSBatchItemFailure{
 					ItemIdentifier: msg.MessageId,
 				})
@@ -70,12 +74,15 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 				return
 			}
 			decision, _ := processor.Handle(ctx, cmd)
+			logger.AddAttribute("processing_decision", string(decision))
 			if decision == usecases.DecisionAck {
+				metric.Metric("EventProcessed", 1)
 				return
 			}
 
 			if decision == usecases.DecisionRetry {
 				mu.Lock()
+				metric.Metric("MessageRetry", 1)
 				batchItemFailures = append(batchItemFailures, events.SQSBatchItemFailure{
 					ItemIdentifier: msg.MessageId,
 				})
@@ -94,6 +101,7 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 						StringValue:      v.StringValue,
 					}
 				}
+				metric.Metric("MessageSendToDLQError", 1)
 				_, err := l.sqsClient.SendMessage(ctx, &sqs.SendMessageInput{
 					QueueUrl:          aws.String(l.dlqURL),
 					MessageBody:       aws.String(msg.Body),
@@ -101,8 +109,8 @@ func (l *LambdaEntryPoint) Handler(ctx context.Context, sqsEvent events.SQSEvent
 				})
 
 				if err != nil {
-					logger.AddAttribute("error_sending_to_dlq", err.Error())
 					mu.Lock()
+					logger.AddAttribute("error_sending_to_dlq", err.Error())
 					batchItemFailures = append(batchItemFailures, events.SQSBatchItemFailure{
 						ItemIdentifier: msg.MessageId,
 					})
