@@ -3,8 +3,10 @@
 PRODUCER_MAIN = ./cmd/producer/main.go
 COVER_IGNORE='mocks/|tests/|cmd/'
 
-TF_DOCKER = docker run --rm -v "$(PWD):/app" -w /app/terraform/envs/local --network host hashicorp/terraform:latest
-PY_DOCKER = docker run --rm -it -v "$(PWD):/app" -w /app --network host
+export MSYS_NO_PATHCONV := 1
+
+TF_DOCKER = docker run --rm -v "$(CURDIR):/app" -w /app/terraform/envs/local --network host hashicorp/terraform:latest
+PY_DOCKER = docker run --rm -it -v "$(CURDIR):/app" -w /app --network host
 
 test:
 	go test -v ./...
@@ -25,7 +27,7 @@ build:
 	@echo "building..."
 	mkdir -p build
 	docker run --rm \
-		-v "$(PWD):/app" \
+		-v "$(CURDIR):/app" \
 		-w /app \
 		-e GOOS=linux \
 		-e GOARCH=amd64 \

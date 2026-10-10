@@ -28,3 +28,15 @@ services:
       - AWS_SECRET_ACCESS_KEY=test
     depends_on:
       - localstack
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - localstack
+volumes:
+  grafana_data:
