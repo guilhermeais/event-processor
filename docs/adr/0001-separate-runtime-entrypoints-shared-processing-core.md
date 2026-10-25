@@ -23,6 +23,41 @@ Lambda Consumer Adapter        Kubernetes Worker Adapter
 
 The adapters own delivery mechanics. The core owns the meaning of processing an event.
 
+## Composition Root
+
+Dependency construction will be centralized in one shared composition root. The composition root assembles the Processing Core and its infrastructure dependencies; it does not decide how messages are acknowledged.
+
+```text
+cmd/lambda -----------------> Lambda adapter
+                                  |
+cmd/worker -----------------> SQS Worker adapter
+                                  |
+                                  v
+                         shared composition root
+                                  |
+             +--------------------+--------------------+
+             |                    |                    |
+        Schema Provider       Validator             Persister
+             |                    |                    |
+             +--------------------+--------------------+
+                                  |
+                              Processor
+```
+
+The exact package name for the composition root remains an implementation decision. The important boundary is that both runtime entrypoints use the same assembly path.
+
+The project will not introduce a generic `EntryPoint` interface. Lambda and the SQS Worker have different lifecycle and acknowledgement contracts:
+
+```go
+// Lambda adapter: invoked by the Lambda runtime.
+Handle(ctx context.Context, event events.SQSEvent) events.SQSEventResponse
+
+// SQS Worker adapter: owns a long-running lifecycle.
+Run(ctx context.Context) error
+```
+
+The project will also avoid one factory type per constructor, such as `ValidatorFactory` or `LambdaFactory`, unless a real construction variation justifies it. A factory that only forwards arguments to an existing constructor adds indirection without creating a useful seam.
+
 ## Shared Contract
 
 Both adapters must pass the same normalized message to the core:
@@ -50,6 +85,7 @@ The core returns an explicit outcome rather than an adapter-specific error:
 - `cmd/worker` must not import Lambda event types.
 - The processing core must not import Lambda, Kubernetes, or container orchestration packages.
 - AWS client construction and schema-cache construction should be reusable, while message acknowledgement remains adapter-owned.
+- Shared dependency construction must go through the composition root rather than being duplicated in each `cmd/*` entrypoint.
 - Tests for the core must not require Lambda or Kubernetes.
 - Adapter tests must verify translation and acknowledgement independently.
 
