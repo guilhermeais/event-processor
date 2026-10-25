@@ -10,7 +10,7 @@ import (
 )
 
 type JSONSchemaLoader interface {
-	Load(ctx context.Context) []UncompiledSchema
+	Load(ctx context.Context) ([]UncompiledSchema, error)
 }
 
 type DynamoDbJSONSchemaLoader struct {
