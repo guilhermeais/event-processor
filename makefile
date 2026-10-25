@@ -5,7 +5,7 @@ COVER_IGNORE='mocks/|tests/|cmd/'
 
 export MSYS_NO_PATHCONV := 1
 
-TF_DOCKER = docker run --rm -v "$(CURDIR):/app" -w /app/terraform/envs/local --network host hashicorp/terraform:latest
+TF_DOCKER = docker run --rm -v "$(CURDIR):/app" -w /app/terraform/envs/local --network host hashicorp/terraform:1.5.7
 PY_DOCKER = docker run --rm -it -v "$(CURDIR):/app" -w /app --network host
 
 test:

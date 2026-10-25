@@ -1,13 +1,13 @@
 services:
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:4.14.0
     ports:
       - "127.0.0.1:4566:4566"
     environment:
       - SERVICES=sqs,sns,dynamodb,lambda,logs,cloudwatch,xray,iam
       - AWS_DEFAULT_REGION=us-east-1
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN- }
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./build:/var/task"
