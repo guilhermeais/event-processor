@@ -2,48 +2,17 @@ package entrypoint
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	ddbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/google/uuid"
 	"github.com/guilhermeais/event-processor/internal/infra/entrypoint"
-	"github.com/guilhermeais/event-processor/internal/infra/validator"
 	testhelpers "github.com/guilhermeais/event-processor/tests/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
-
-func prepareTables(t *testing.T, ctx context.Context, dynamo *dynamodb.Client) (func(), string, string) {
-	eventsTbl := fmt.Sprintf("events_%s", uuid.NewString())
-	schemasTbl := fmt.Sprintf("schemas_%s", uuid.NewString())
-	assert.NoError(t, testhelpers.CreateEventsTable(ctx, dynamo, eventsTbl))
-	assert.NoError(t, testhelpers.CreateSchemasTable(ctx, dynamo, schemasTbl))
-
-	_, err := dynamo.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: aws.String(schemasTbl),
-		Item: map[string]ddbtypes.AttributeValue{
-			"event_type": &ddbtypes.AttributeValueMemberS{Value: "profile.created"},
-			"schema": &ddbtypes.AttributeValueMemberS{Value: `{
-				"type":"object",
-				"properties": {
-					"id": { "type": "string" },
-					"birthday": { "type": "string", "format": "date" }
-				}
-			}`},
-		},
-	})
-	assert.NoError(t, err)
-
-	return func() {
-		defer testhelpers.DeleteTable(ctx, dynamo, eventsTbl)
-		defer testhelpers.DeleteTable(ctx, dynamo, schemasTbl)
-	}, eventsTbl, schemasTbl
-}
 
 type sut struct {
 	sut                           *entrypoint.LambdaEntryPoint
@@ -52,29 +21,23 @@ type sut struct {
 }
 
 func makeSut(t *testing.T, ctx context.Context, dynamo *dynamodb.Client, sqsClientLocal *sqs.Client) sut {
-	cleanupTables, eventsTbl, schemasTbl := prepareTables(t, ctx, dynamo)
+	testingDeps := testhelpers.PrepareDependencies(ctx, t, dynamo, sqsClientLocal)
 
-	dlqOut, err := sqsClientLocal.CreateQueue(ctx, &sqs.CreateQueueInput{
-		QueueName: aws.String("dlq-" + uuid.NewString()),
-	})
-	assert.NoError(t, err)
+	l := entrypoint.NewLambdaEntryPoint(
+		dynamo,
+		testingDeps.EventsTbl,
+		testingDeps.DLQUrl,
+		testingDeps.Validator,
+		sqsClientLocal,
+		testhelpers.TestLoggerFactory(t),
+	)
 
-	loader := validator.NewDynamoDbJSONSchemaLoader(dynamo, schemasTbl)
-	schemas, err := loader.Load(ctx)
-	assert.NoError(t, err)
-
-	v, err := validator.NewJSONSchemaValidator(schemas)
-	assert.NoError(t, err)
-
-	l := entrypoint.NewLambdaEntryPoint(dynamo, eventsTbl, *dlqOut.QueueUrl, v, sqsClientLocal, testhelpers.TestLoggerFactory(t))
 	return sut{
 		sut:        l,
-		eventsTbl:  eventsTbl,
-		schemasTbl: schemasTbl,
-		dlqUrl:     *dlqOut.QueueUrl,
-		cleanup: func() {
-			cleanupTables()
-		},
+		eventsTbl:  testingDeps.EventsTbl,
+		schemasTbl: testingDeps.SchemasTbl,
+		dlqUrl:     testingDeps.DLQUrl,
+		cleanup:    testingDeps.Cleanup,
 	}
 }
 

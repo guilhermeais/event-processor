@@ -9,6 +9,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	ddbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/google/uuid"
+	"github.com/guilhermeais/event-processor/internal/infra/validator"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -99,4 +103,62 @@ func GetDynamoDbEvent(
 	assert.NoError(t, err)
 
 	return parsedEvent
+}
+
+func PrepareDependencies(ctx context.Context, t *testing.T, dynamo *dynamodb.Client, sqsClientLocal *sqs.Client) TestingDependencies {
+	cleanupTables, eventsTbl, schemasTbl := PrepareTables(t, ctx, dynamo)
+
+	dlqOut, err := sqsClientLocal.CreateQueue(ctx, &sqs.CreateQueueInput{
+		QueueName: aws.String("dlq-" + uuid.NewString()),
+	})
+	assert.NoError(t, err)
+
+	loader := validator.NewDynamoDbJSONSchemaLoader(dynamo, schemasTbl)
+	schemas, err := loader.Load(ctx)
+	assert.NoError(t, err)
+
+	v, err := validator.NewJSONSchemaValidator(schemas)
+	assert.NoError(t, err)
+	return TestingDependencies{
+		EventsTbl:  eventsTbl,
+		SchemasTbl: schemasTbl,
+		DLQUrl:     *dlqOut.QueueUrl,
+		Validator:  v,
+		Cleanup: func() {
+			cleanupTables()
+		},
+	}
+}
+
+type TestingDependencies struct {
+	EventsTbl, SchemasTbl, DLQUrl string
+	Validator                     *validator.JSONSchemaValidator
+	Cleanup                       func()
+}
+
+func PrepareTables(t *testing.T, ctx context.Context, dynamo *dynamodb.Client) (func(), string, string) {
+	eventsTbl := fmt.Sprintf("events_%s", uuid.NewString())
+	schemasTbl := fmt.Sprintf("schemas_%s", uuid.NewString())
+	assert.NoError(t, CreateEventsTable(ctx, dynamo, eventsTbl))
+	assert.NoError(t, CreateSchemasTable(ctx, dynamo, schemasTbl))
+
+	_, err := dynamo.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: aws.String(schemasTbl),
+		Item: map[string]ddbtypes.AttributeValue{
+			"event_type": &ddbtypes.AttributeValueMemberS{Value: "profile.created"},
+			"schema": &ddbtypes.AttributeValueMemberS{Value: `{
+				"type":"object",
+				"properties": {
+					"id": { "type": "string" },
+					"birthday": { "type": "string", "format": "date" }
+				}
+			}`},
+		},
+	})
+	assert.NoError(t, err)
+
+	return func() {
+		defer DeleteTable(ctx, dynamo, eventsTbl)
+		defer DeleteTable(ctx, dynamo, schemasTbl)
+	}, eventsTbl, schemasTbl
 }
