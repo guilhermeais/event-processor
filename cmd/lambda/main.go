@@ -4,15 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-xray-sdk-go/v2/xray"
+	b "github.com/guilhermeais/event-processor/internal/bootstrap"
 	"github.com/guilhermeais/event-processor/internal/infra/entrypoint"
-	"github.com/guilhermeais/event-processor/internal/infra/validator"
+	"github.com/guilhermeais/event-processor/internal/infra/enviroment"
 	"github.com/guilhermeais/event-processor/internal/observability"
 )
 
@@ -21,24 +19,20 @@ func bootstrap(ctx context.Context) (*entrypoint.LambdaEntryPoint, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to load SDK config, %v", err)
 	}
-
-	dynamoClient := dynamodb.NewFromConfig(cfg)
-	sqsClient := sqs.NewFromConfig(cfg)
-
-	schemaTable := os.Getenv("SCHEMA_TABLE_NAME")
-	eventsTableName := os.Getenv("EVENTS_TABLE_NAME")
-	dlqURL := os.Getenv("DLQ_URL")
-
-	l := validator.NewDynamoDbJSONSchemaLoader(dynamoClient, schemaTable)
-	schemas, err := l.Load(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error on loading schemas: %v", err)
-	}
-	v, err := validator.NewJSONSchemaValidator(schemas)
-	if err != nil {
-		return nil, fmt.Errorf("error on creating validator: %v", err)
-	}
-	return entrypoint.NewLambdaEntryPoint(dynamoClient, eventsTableName, dlqURL, v, sqsClient, observability.NewLoggerDefault), nil
+	pdm := b.NewProcessingDependenciesManager(ctx, cfg, b.Config{
+		EventsTableName: enviroment.EnvironmentVariables.SCHEMA_TABLE_NAME,
+		SchemaTableName: enviroment.EnvironmentVariables.SCHEMA_TABLE_NAME,
+		DLQUrl:          enviroment.EnvironmentVariables.DLQ_URL,
+	})
+	deps, err := pdm.LoadDependencies(ctx)
+	return entrypoint.NewLambdaEntryPoint(
+		deps.DynamoClient,
+		deps.EventsTableName,
+		deps.DLQUrl,
+		deps.Validator,
+		deps.SqsClient,
+		observability.NewLoggerDefault,
+	), nil
 }
 
 func main() {
